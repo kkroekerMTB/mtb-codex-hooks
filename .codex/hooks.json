@@ -1,0 +1,132 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" SessionStart",
+            "timeout": 30,
+            "statusMessage": "Logging SessionStart hook"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PreToolUse",
+            "timeout": 30,
+            "statusMessage": "Logging PreToolUse hook"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PermissionRequest",
+            "timeout": 30,
+            "statusMessage": "Logging PermissionRequest hook"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PostToolUse",
+            "timeout": 30,
+            "statusMessage": "Logging PostToolUse hook"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PreCompact",
+            "timeout": 30,
+            "statusMessage": "Logging PreCompact hook"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PostCompact",
+            "timeout": 30,
+            "statusMessage": "Logging PostCompact hook"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" UserPromptSubmit",
+            "timeout": 30,
+            "statusMessage": "Logging UserPromptSubmit hook"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" SubagentStart",
+            "timeout": 30,
+            "statusMessage": "Logging SubagentStart hook"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" SubagentStop",
+            "timeout": 30,
+            "statusMessage": "Logging SubagentStop hook"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" Stop",
+            "timeout": 30,
+            "statusMessage": "Logging Stop hook"
+          }
+        ]
+      }
+    ]
+  }
+}
