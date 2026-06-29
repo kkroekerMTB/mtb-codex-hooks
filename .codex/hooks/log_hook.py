@@ -36,12 +36,85 @@ def read_payload() -> object:
         return raw_payload
 
 
+def latest_token_usage(payload: object) -> dict:
+    empty_usage = {
+        "cumulative": None,
+        "latest_completed_model_call": None,
+        "model_context_window": None,
+        "rate_limits": None,
+        "source": None,
+    }
+
+    if not isinstance(payload, dict):
+        return empty_usage
+
+    transcript_path = payload.get("transcript_path")
+    if not isinstance(transcript_path, str) or not transcript_path:
+        return empty_usage
+
+    source = {
+        "transcript_path": transcript_path,
+        "token_count_timestamp": None,
+    }
+
+    try:
+        transcript = Path(transcript_path)
+        last_token_count = None
+        with transcript.open("r", encoding="utf-8") as transcript_file:
+            for line in transcript_file:
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                event_payload = event.get("payload")
+                if not isinstance(event_payload, dict):
+                    continue
+
+                if event_payload.get("type") == "token_count":
+                    last_token_count = event
+    except OSError as error:
+        return {
+            **empty_usage,
+            "source": {
+                **source,
+                "error": str(error),
+            },
+        }
+
+    if last_token_count is None:
+        return {
+            **empty_usage,
+            "source": source,
+        }
+
+    source["token_count_timestamp"] = last_token_count.get("timestamp")
+    token_payload = last_token_count.get("payload", {})
+    info = token_payload.get("info", {})
+
+    if not isinstance(info, dict):
+        return {
+            **empty_usage,
+            "source": source,
+        }
+
+    return {
+        "cumulative": info.get("total_token_usage"),
+        "latest_completed_model_call": info.get("last_token_usage"),
+        "model_context_window": info.get("model_context_window"),
+        "rate_limits": token_payload.get("rate_limits"),
+        "source": source,
+    }
+
+
 def main() -> int:
     hook_type = sys.argv[1] if len(sys.argv) > 1 else "unknown"
+    payload = read_payload()
     record = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "hook_type": hook_type,
-        "payload": read_payload(),
+        "payload": payload,
+        "token_usage": latest_token_usage(payload),
     }
 
     log_path = git_root() / "hooks.log"

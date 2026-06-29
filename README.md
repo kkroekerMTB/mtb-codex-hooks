@@ -17,6 +17,13 @@ Each log entry includes:
 - `timestamp`
 - `hook_type`
 - `payload`
+- `token_usage`
+
+`token_usage` is a best-effort snapshot read from the hook payload's
+`transcript_path`. It includes the latest known cumulative token usage and the
+latest completed model-call usage at the time the hook runs. Early hooks may
+show `null` values before Codex has written a token-count event to the
+transcript.
 
 ## Install
 
@@ -64,3 +71,27 @@ This example configures:
 - `SubagentStart`
 - `SubagentStop`
 - `Stop`
+
+## Power BI CSV Export
+
+Convert the append-only JSONL log into CSV files with:
+
+```shell
+python3 scripts/hooks_log_to_csv.py
+```
+
+By default, this reads `hooks.log` and writes:
+
+- `hooks_events.csv`: one row per hook event with flattened session, turn,
+  tool, prompt, and token fields.
+- `hooks_tool_calls.csv`: one row per tool call, joining `PreToolUse` and
+  `PostToolUse` records by `tool_use_id` so reports can include duration and
+  response previews.
+
+You can override the paths:
+
+```shell
+python3 scripts/hooks_log_to_csv.py path/to/hooks.log \
+  --events-out path/to/hooks_events.csv \
+  --tool-calls-out path/to/hooks_tool_calls.csv
+```
