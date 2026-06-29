@@ -3,6 +3,8 @@
 This repository contains a project-local Codex hooks setup that logs every
 supported hook type to `hooks.log`.
 
+Here's the official documentation from OpenAI for codex hooks: https://developers.openai.com/codex/hooks
+
 ## Files
 
 - `.codex/hooks.json` configures all supported Codex hook events.
