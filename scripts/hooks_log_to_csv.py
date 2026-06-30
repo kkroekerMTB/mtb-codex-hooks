@@ -74,12 +74,12 @@ def main() -> int:
     )
     parser.add_argument(
         "--events-out",
-        default="hooks_events.csv",
+        default=str(Path.home() / ".codex" / "hooks_events.csv"),
         help="Output path for one-row-per-hook-event CSV.",
     )
     parser.add_argument(
         "--tool-calls-out",
-        default="hooks_tool_calls.csv",
+        default=str(Path.home() / ".codex" / "hooks_tool_calls.csv"),
         help="Output path for joined PreToolUse/PostToolUse CSV.",
     )
     args = parser.parse_args()
