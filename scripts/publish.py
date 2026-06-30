@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
+import sys
 from pathlib import Path
 
 
@@ -14,8 +16,7 @@ PROJECT_HOOKS_JSON = REPO_ROOT / ".codex" / "hooks.json"
 PROJECT_LOG_HOOK = REPO_ROOT / ".codex" / "hooks" / "log_hook.py"
 PROJECT_CSV_EXPORT = REPO_ROOT / "scripts" / "hooks_log_to_csv.py"
 DEFAULT_OUTPUT = REPO_ROOT / "dist" / "codex-logging-hooks"
-USER_LOG_HOOK_COMMAND_PATH = "$HOME/.codex/hooks/log_hook.py"
-USER_CSV_EXPORT_COMMAND_PATH = "$HOME/.codex/hooks/hooks_log_to_csv.py"
+PYTHON_EXECUTABLE = Path(sys.executable)
 
 
 def main() -> int:
@@ -56,9 +57,9 @@ def publish(output: Path = DEFAULT_OUTPUT) -> Path:
 
     write_json(output_dir / "hooks.json", published_config)
     shutil.copy2(PROJECT_LOG_HOOK, hooks_dir / "log_hook.py")
-    (hooks_dir / "log_hook.py").chmod(0o755)
+    make_executable(hooks_dir / "log_hook.py")
     shutil.copy2(PROJECT_CSV_EXPORT, hooks_dir / "hooks_log_to_csv.py")
-    (hooks_dir / "hooks_log_to_csv.py").chmod(0o755)
+    make_executable(hooks_dir / "hooks_log_to_csv.py")
 
     return output_dir
 
@@ -90,6 +91,13 @@ def recreate_dir(path: Path) -> None:
     path.mkdir(parents=True)
 
 
+def make_executable(path: Path) -> None:
+    if os.name == "nt":
+        return
+
+    path.chmod(0o755)
+
+
 def publishable_hooks_config(config: dict) -> dict:
     published = json.loads(json.dumps(config))
     hooks_by_event = published.get("hooks")
@@ -118,10 +126,12 @@ def user_level_command(event_name: str, command: object) -> str:
     if not isinstance(command, str):
         raise SystemExit(f"Expected {event_name} hook command to be a string.")
 
-    if ".codex/hooks/log_hook.py" in command:
+    normalized_command = command.replace("\\", "/")
+
+    if ".codex/hooks/log_hook.py" in normalized_command:
         return user_level_log_command(event_name, command)
 
-    if "scripts/hooks_log_to_csv.py" in command:
+    if "scripts/hooks_log_to_csv.py" in normalized_command:
         return user_level_csv_export_command(event_name)
 
     raise SystemExit(f"Unexpected {event_name} hook command: {command!r}")
@@ -134,7 +144,10 @@ def user_level_log_command(event_name: str, command: str) -> str:
             f"Expected {event_name} command to end with its hook type; got {command!r}."
         )
 
-    return f'python3 "{USER_LOG_HOOK_COMMAND_PATH}" {hook_type}'
+    return user_level_python_command(
+        "Path.home()/'.codex'/'hooks'/'log_hook.py'",
+        [repr(hook_type)],
+    )
 
 
 def user_level_csv_export_command(event_name: str) -> str:
@@ -142,10 +155,31 @@ def user_level_csv_export_command(event_name: str) -> str:
         raise SystemExit(f"CSV export is only expected on Stop hooks, got {event_name}.")
 
     return (
-        f'python3 "{USER_CSV_EXPORT_COMMAND_PATH}" '
-        f'--events-out "$HOME/.codex/hooks_events.csv" '
-        f'--tool-calls-out "$HOME/.codex/hooks_tool_calls.csv"'
+        user_level_python_command(
+            "Path.home()/'.codex'/'hooks'/'hooks_log_to_csv.py'",
+            [
+                repr("--events-out"),
+                "str(Path.home()/'.codex'/'hooks_events.csv')",
+                repr("--tool-calls-out"),
+                "str(Path.home()/'.codex'/'hooks_tool_calls.csv')",
+            ],
+        )
     )
+
+
+def user_level_python_command(script_expression: str, arguments: list[str]) -> str:
+    argv = ", ".join(["str(script)", *arguments])
+    code = (
+        "from pathlib import Path; import runpy, sys; "
+        f"script={script_expression}; "
+        f"sys.argv=[{argv}]; "
+        "runpy.run_path(str(script), run_name='__main__')"
+    )
+    return f'{quote_command_argument(str(PYTHON_EXECUTABLE))} -c "{code}"'
+
+
+def quote_command_argument(value: str) -> str:
+    return f'"{value.replace(chr(34), chr(92) + chr(34))}"'
 
 
 if __name__ == "__main__":

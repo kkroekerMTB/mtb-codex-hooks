@@ -3,12 +3,18 @@
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import sys
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import IO, Iterator
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 
 def log_path() -> Path:
@@ -28,6 +34,28 @@ def read_payload() -> object:
         return json.loads(raw_payload)
     except json.JSONDecodeError:
         return raw_payload
+
+
+@contextmanager
+def exclusive_file_lock(log_file: IO[str]) -> Iterator[None]:
+    if os.name == "nt":
+        position = log_file.tell()
+        log_file.seek(0)
+        msvcrt.locking(log_file.fileno(), msvcrt.LK_LOCK, 1)
+        try:
+            log_file.seek(position)
+            yield
+        finally:
+            log_file.seek(0)
+            msvcrt.locking(log_file.fileno(), msvcrt.LK_UNLCK, 1)
+            log_file.seek(position)
+        return
+
+    fcntl.flock(log_file.fileno(), fcntl.LOCK_EX)
+    try:
+        yield
+    finally:
+        fcntl.flock(log_file.fileno(), fcntl.LOCK_UN)
 
 
 def latest_token_usage(payload: object) -> dict:
@@ -115,10 +143,9 @@ def main() -> int:
     destination.parent.mkdir(parents=True, exist_ok=True)
 
     with destination.open("a", encoding="utf-8") as log_file:
-        fcntl.flock(log_file.fileno(), fcntl.LOCK_EX)
-        log_file.write(json.dumps(record, sort_keys=True) + "\n")
-        log_file.flush()
-        fcntl.flock(log_file.fileno(), fcntl.LOCK_UN)
+        with exclusive_file_lock(log_file):
+            log_file.write(json.dumps(record, sort_keys=True) + "\n")
+            log_file.flush()
 
     return 0
 
