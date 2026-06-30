@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -68,8 +69,8 @@ def main() -> int:
     parser.add_argument(
         "input",
         nargs="?",
-        default="hooks.log",
-        help="Path to the hooks JSONL log. Defaults to hooks.log.",
+        default=str(Path.home() / ".codex" / "hooks.log"),
+        help="Path to the hooks JSONL log. Defaults to ~/.codex/hooks.log.",
     )
     parser.add_argument(
         "--events-out",
@@ -87,8 +88,8 @@ def main() -> int:
     write_events_csv(records, Path(args.events_out))
     write_tool_calls_csv(records, Path(args.tool_calls_out))
 
-    print(f"Wrote {len(records)} events to {args.events_out}")
-    print(f"Wrote tool-call rows to {args.tool_calls_out}")
+    print(f"Wrote {len(records)} events to {args.events_out}", file=sys.stderr)
+    print(f"Wrote tool-call rows to {args.tool_calls_out}", file=sys.stderr)
     return 0
 
 

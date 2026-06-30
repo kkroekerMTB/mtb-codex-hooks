@@ -1,28 +1,22 @@
 #!/usr/bin/env python3
-"""Append Codex hook invocations to hooks.log as JSON lines."""
+"""Append Codex hook invocations to a shared JSONL log."""
 
 from __future__ import annotations
 
 import fcntl
 import json
-import subprocess
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 
-def git_root() -> Path:
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return Path.cwd()
+def log_path() -> Path:
+    configured_path = os.environ.get("CODEX_HOOKS_LOG_PATH")
+    if configured_path:
+        return Path(configured_path).expanduser()
 
-    return Path(result.stdout.strip())
+    return Path.home() / ".codex" / "hooks.log"
 
 
 def read_payload() -> object:
@@ -117,8 +111,10 @@ def main() -> int:
         "token_usage": latest_token_usage(payload),
     }
 
-    log_path = git_root() / "hooks.log"
-    with log_path.open("a", encoding="utf-8") as log_file:
+    destination = log_path()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    with destination.open("a", encoding="utf-8") as log_file:
         fcntl.flock(log_file.fileno(), fcntl.LOCK_EX)
         log_file.write(json.dumps(record, sort_keys=True) + "\n")
         log_file.flush()
