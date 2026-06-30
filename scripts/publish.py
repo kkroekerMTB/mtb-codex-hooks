@@ -7,7 +7,6 @@ import argparse
 import json
 import os
 import shutil
-import sys
 from pathlib import Path
 
 
@@ -16,7 +15,6 @@ PROJECT_HOOKS_JSON = REPO_ROOT / ".codex" / "hooks.json"
 PROJECT_LOG_HOOK = REPO_ROOT / ".codex" / "hooks" / "log_hook.py"
 PROJECT_CSV_EXPORT = REPO_ROOT / "scripts" / "hooks_log_to_csv.py"
 DEFAULT_OUTPUT = REPO_ROOT / "dist" / "codex-logging-hooks"
-PYTHON_EXECUTABLE = Path(sys.executable)
 
 
 def main() -> int:
@@ -144,9 +142,11 @@ def user_level_log_command(event_name: str, command: str) -> str:
             f"Expected {event_name} command to end with its hook type; got {command!r}."
         )
 
-    return user_level_python_command(
-        "Path.home()/'.codex'/'hooks'/'log_hook.py'",
-        [repr(hook_type)],
+    return user_level_python_command_variants(
+        posix_script="$HOME/.codex/hooks/log_hook.py",
+        windows_script=r"%USERPROFILE%\.codex\hooks\log_hook.py",
+        posix_args=[hook_type],
+        windows_args=[hook_type],
     )
 
 
@@ -154,28 +154,43 @@ def user_level_csv_export_command(event_name: str) -> str:
     if event_name != "Stop":
         raise SystemExit(f"CSV export is only expected on Stop hooks, got {event_name}.")
 
-    return (
-        user_level_python_command(
-            "Path.home()/'.codex'/'hooks'/'hooks_log_to_csv.py'",
-            [
-                repr("--events-out"),
-                "str(Path.home()/'.codex'/'hooks_events.csv')",
-                repr("--tool-calls-out"),
-                "str(Path.home()/'.codex'/'hooks_tool_calls.csv')",
-            ],
-        )
+    return user_level_python_command_variants(
+        posix_script="$HOME/.codex/hooks/hooks_log_to_csv.py",
+        windows_script=r"%USERPROFILE%\.codex\hooks\hooks_log_to_csv.py",
+        posix_args=[
+            "--events-out",
+            "$HOME/.codex/hooks_events.csv",
+            "--tool-calls-out",
+            "$HOME/.codex/hooks_tool_calls.csv",
+        ],
+        windows_args=[
+            "--events-out",
+            r"%USERPROFILE%\.codex\hooks_events.csv",
+            "--tool-calls-out",
+            r"%USERPROFILE%\.codex\hooks_tool_calls.csv",
+        ],
     )
 
 
-def user_level_python_command(script_expression: str, arguments: list[str]) -> str:
-    argv = ", ".join(["str(script)", *arguments])
-    code = (
-        "from pathlib import Path; import runpy, sys; "
-        f"script={script_expression}; "
-        f"sys.argv=[{argv}]; "
-        "runpy.run_path(str(script), run_name='__main__')"
-    )
-    return f'{quote_command_argument(str(PYTHON_EXECUTABLE))} -c "{code}"'
+def user_level_python_command_variants(
+    *,
+    posix_script: str,
+    windows_script: str,
+    posix_args: list[str],
+    windows_args: list[str],
+) -> str:
+    commands = [
+        python_command("python3", posix_script, posix_args),
+        python_command("python", posix_script, posix_args),
+        python_command("python3", windows_script, windows_args),
+        python_command("python", windows_script, windows_args),
+    ]
+    return " || ".join(commands)
+
+
+def python_command(executable: str, script: str, arguments: list[str]) -> str:
+    command_arguments = [executable, script, *arguments]
+    return " ".join(quote_command_argument(argument) for argument in command_arguments)
 
 
 def quote_command_argument(value: str) -> str:
