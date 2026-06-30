@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py SessionStart || python .codex/hooks/log_hook.py SessionStart",
+            "command": "python .codex/hooks/log_hook.py SessionStart || python3 .codex/hooks/log_hook.py SessionStart",
             "timeout": 30,
             "statusMessage": "Logging SessionStart hook"
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py PreToolUse || python .codex/hooks/log_hook.py PreToolUse",
+            "command": "python .codex/hooks/log_hook.py PreToolUse || python3 .codex/hooks/log_hook.py PreToolUse",
             "timeout": 30,
             "statusMessage": "Logging PreToolUse hook"
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py PermissionRequest || python .codex/hooks/log_hook.py PermissionRequest",
+            "command": "python .codex/hooks/log_hook.py PermissionRequest || python3 .codex/hooks/log_hook.py PermissionRequest",
             "timeout": 30,
             "statusMessage": "Logging PermissionRequest hook"
           }
@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py PostToolUse || python .codex/hooks/log_hook.py PostToolUse",
+            "command": "python .codex/hooks/log_hook.py PostToolUse || python3 .codex/hooks/log_hook.py PostToolUse",
             "timeout": 30,
             "statusMessage": "Logging PostToolUse hook"
           }
@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py PreCompact || python .codex/hooks/log_hook.py PreCompact",
+            "command": "python .codex/hooks/log_hook.py PreCompact || python3 .codex/hooks/log_hook.py PreCompact",
             "timeout": 30,
             "statusMessage": "Logging PreCompact hook"
           }
@@ -71,7 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py PostCompact || python .codex/hooks/log_hook.py PostCompact",
+            "command": "python .codex/hooks/log_hook.py PostCompact || python3 .codex/hooks/log_hook.py PostCompact",
             "timeout": 30,
             "statusMessage": "Logging PostCompact hook"
           }
@@ -83,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py UserPromptSubmit || python .codex/hooks/log_hook.py UserPromptSubmit",
+            "command": "python .codex/hooks/log_hook.py UserPromptSubmit || python3 .codex/hooks/log_hook.py UserPromptSubmit",
             "timeout": 30,
             "statusMessage": "Logging UserPromptSubmit hook"
           }
@@ -96,7 +96,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py SubagentStart || python .codex/hooks/log_hook.py SubagentStart",
+            "command": "python .codex/hooks/log_hook.py SubagentStart || python3 .codex/hooks/log_hook.py SubagentStart",
             "timeout": 30,
             "statusMessage": "Logging SubagentStart hook"
           }
@@ -109,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py SubagentStop || python .codex/hooks/log_hook.py SubagentStop",
+            "command": "python .codex/hooks/log_hook.py SubagentStop || python3 .codex/hooks/log_hook.py SubagentStop",
             "timeout": 30,
             "statusMessage": "Logging SubagentStop hook"
           }
@@ -121,13 +121,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .codex/hooks/log_hook.py Stop || python .codex/hooks/log_hook.py Stop",
+            "command": "python .codex/hooks/log_hook.py Stop || python3 .codex/hooks/log_hook.py Stop",
             "timeout": 30,
             "statusMessage": "Logging Stop hook"
           },
           {
             "type": "command",
-            "command": "python3 scripts/hooks_log_to_csv.py || python scripts/hooks_log_to_csv.py",
+            "command": "python scripts/hooks_log_to_csv.py || python3 scripts/hooks_log_to_csv.py",
             "timeout": 30,
             "statusMessage": "Exporting hook CSV reports"
           }
