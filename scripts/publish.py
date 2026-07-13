@@ -155,14 +155,10 @@ def user_level_csv_export_command(event_name: str) -> str:
         raise SystemExit(f"CSV export is only expected on Stop hooks, got {event_name}.")
 
     return (
-        user_level_python_command(
+        'cd "$(git rev-parse --show-toplevel)" && '
+        + user_level_python_command(
             "Path.home()/'.codex'/'hooks'/'hooks_log_to_csv.py'",
-            [
-                repr("--events-out"),
-                "str(Path.home()/'.codex'/'hooks_events.csv')",
-                repr("--tool-calls-out"),
-                "str(Path.home()/'.codex'/'hooks_tool_calls.csv')",
-            ],
+            [],
         )
     )
 

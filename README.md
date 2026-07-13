@@ -130,14 +130,11 @@ Manual installation does the same thing explicitly:
    Also replace the project-local `Stop` CSV export command:
 
    ```json
-   "cd \"$(git rev-parse --show-toplevel)\" && python3 scripts/hooks_log_to_csv.py"
+   "cd \"$(git rev-parse --show-toplevel)\" && python3 \"$HOME/.codex/hooks/hooks_log_to_csv.py\""
    ```
 
-   with the repo-local export command:
-
-   ```json
-   "python3 scripts/hooks_log_to_csv.py"
-   ```
+   This forces the globally installed hook to run from the workspace root, so
+   the CSV files are still written next to that repository.
 
 4. Start Codex from any repository and run:
 
@@ -195,10 +192,10 @@ By default, this reads `~/.codex/hooks.log` and writes:
   `PostToolUse` records by `tool_use_id` so reports can include duration and
   response previews.
 
-The project-local `Stop` hook also runs this command from the repository root
-after logging the stop event, so the local CSV reports are refreshed at the end
-of each conversation. The script resolves the current workspace root with
-`git rev-parse --show-toplevel` when available and writes the CSV reports there.
+The `Stop` hook runs this command from the repository root after logging the
+stop event, so the CSV reports are refreshed at the end of each conversation.
+The script resolves the current workspace root with `git rev-parse
+--show-toplevel` when available and writes the CSV reports there.
 
 You can override the paths:
 

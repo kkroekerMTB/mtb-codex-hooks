@@ -24,10 +24,9 @@ class PublishTest(unittest.TestCase):
     def test_user_level_csv_export_command_uses_python_home_resolution(self) -> None:
         command = publish.user_level_csv_export_command("Stop")
 
-        self.assertTrue(command.startswith(f'"{sys.executable}" -c '))
+        self.assertTrue(command.startswith('cd "$(git rev-parse --show-toplevel)" && '))
+        self.assertIn(f'"{sys.executable}" -c ', command)
         self.assertIn("Path.home()/'.codex'/'hooks'/'hooks_log_to_csv.py", command)
-        self.assertIn("Path.home()/'.codex'/'hooks_events.csv", command)
-        self.assertIn("Path.home()/'.codex'/'hooks_tool_calls.csv", command)
         self.assertNotIn("$HOME", command)
         self.assert_generated_python_is_valid(command)
 
@@ -40,6 +39,8 @@ class PublishTest(unittest.TestCase):
         self.assertIn("'PreToolUse'", command)
 
     def assert_generated_python_is_valid(self, command: str) -> None:
+        if command.startswith('cd "$(git rev-parse --show-toplevel)" && '):
+            command = command.removeprefix('cd "$(git rev-parse --show-toplevel)" && ')
         code = command.split(' -c "', 1)[1].removesuffix('"')
         compile(code, "<generated hook command>", "exec")
 
