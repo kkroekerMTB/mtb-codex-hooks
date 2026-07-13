@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import sys
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -63,34 +64,67 @@ TOOL_CALL_COLUMNS = [
 
 
 def main() -> int:
+    workspace_root = default_workspace_root().resolve()
+    default_log = default_hooks_log_path().resolve()
     parser = argparse.ArgumentParser(
         description="Convert hooks.log JSONL records into Power BI-friendly CSV files."
     )
     parser.add_argument(
         "input",
         nargs="?",
-        default=str(Path.home() / ".codex" / "hooks.log"),
+        default=str(default_log),
         help="Path to the hooks JSONL log. Defaults to ~/.codex/hooks.log.",
     )
     parser.add_argument(
         "--events-out",
-        default=str(Path.home() / ".codex" / "hooks_events.csv"),
+        default=str(workspace_root / "hooks_events.csv"),
         help="Output path for one-row-per-hook-event CSV.",
     )
     parser.add_argument(
         "--tool-calls-out",
-        default=str(Path.home() / ".codex" / "hooks_tool_calls.csv"),
+        default=str(workspace_root / "hooks_tool_calls.csv"),
         help="Output path for joined PreToolUse/PostToolUse CSV.",
     )
     args = parser.parse_args()
 
-    records = read_records(Path(args.input))
-    write_events_csv(records, Path(args.events_out))
-    write_tool_calls_csv(records, Path(args.tool_calls_out))
+    input_path = Path(args.input).expanduser().resolve()
+    events_out = resolve_workspace_path(workspace_root, Path(args.events_out))
+    tool_calls_out = resolve_workspace_path(workspace_root, Path(args.tool_calls_out))
 
-    print(f"Wrote {len(records)} events to {args.events_out}", file=sys.stderr)
-    print(f"Wrote tool-call rows to {args.tool_calls_out}", file=sys.stderr)
+    records = read_records(input_path)
+    write_events_csv(records, events_out)
+    write_tool_calls_csv(records, tool_calls_out)
+
+    print(f"Wrote {len(records)} events to {events_out}", file=sys.stderr)
+    print(f"Wrote tool-call rows to {tool_calls_out}", file=sys.stderr)
     return 0
+
+
+def default_workspace_root() -> Path:
+    try:
+        output = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return Path.cwd()
+
+    return Path(output)
+
+
+def default_hooks_log_path() -> Path:
+    configured_path = Path.home() / ".codex" / "hooks.log"
+    return configured_path
+
+
+def resolve_workspace_path(workspace_root: Path, path: Path) -> Path:
+    path = path.expanduser()
+    candidate = path if path.is_absolute() else workspace_root / path
+    resolved = candidate.resolve()
+    if resolved == workspace_root or workspace_root in resolved.parents:
+        return resolved
+    raise SystemExit(f"Refusing to use path outside the workspace: {path}")
 
 
 def read_records(path: Path) -> list[dict[str, Any]]:
