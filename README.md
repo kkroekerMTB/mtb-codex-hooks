@@ -13,9 +13,6 @@ Here's the official documentation from OpenAI for codex hooks: https://developer
 - `scripts/hooks_log_to_csv.py` converts the shared JSONL log into CSV reports.
 - `~/.codex/hooks.log` is created when a hook runs.
 
-Set `CODEX_HOOKS_LOG_PATH` before starting Codex to write to a different shared
-log file.
-
 Each log entry includes:
 
 - `timestamp`

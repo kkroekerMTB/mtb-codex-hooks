@@ -18,10 +18,6 @@ else:
 
 
 def log_path() -> Path:
-    configured_path = os.environ.get("CODEX_HOOKS_LOG_PATH")
-    if configured_path:
-        return Path(configured_path).expanduser()
-
     return Path.home() / ".codex" / "hooks.log"
 
 
