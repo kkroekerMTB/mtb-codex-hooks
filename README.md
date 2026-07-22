@@ -96,6 +96,22 @@ It reads the CSV files in the current directory and writes
 are needed at report-generation time. Use `--input-dir` or `--output` to
 override either path.
 
+To generate the report and open it in Windows Chrome from Bash in WSL:
+
+```bash
+node ~/.codex/hooks/generate_hooks_report.mjs && \
+  "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe" \
+  "$(wslpath -w "$(realpath hooks-report.html)")"
+```
+
+From PowerShell Core running inside WSL:
+
+```powershell
+node ~/.codex/hooks/generate_hooks_report.mjs && `
+  & "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe" `
+    (wslpath -w (realpath hooks-report.html))
+```
+
 To install into another Codex directory, run:
 
 ```shell
