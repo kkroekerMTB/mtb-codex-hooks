@@ -72,6 +72,10 @@ SKILL_INVOCATION_COLUMNS = [
     "detection_method",
 ]
 
+EVENTS_CSV_FILENAME = "hooks_events.csv"
+TOOL_CALLS_CSV_FILENAME = "hooks_tool_calls.csv"
+SKILL_INVOCATIONS_CSV_FILENAME = "hooks_skill_invocations.csv"
+
 SKILL_PATH_PATTERN = re.compile(
     r"(?P<path>(?:[A-Za-z]:)?[\\/]?"
     r"(?:[^\\/\s\"'|;&(),]+[\\/])*"
@@ -105,17 +109,17 @@ def main() -> int:
     )
     parser.add_argument(
         "--events-out",
-        default=str(workspace_root / "hooks_events.csv"),
+        default=str(workspace_root / EVENTS_CSV_FILENAME),
         help="Output path for one-row-per-hook-event CSV.",
     )
     parser.add_argument(
         "--tool-calls-out",
-        default=str(workspace_root / "hooks_tool_calls.csv"),
+        default=str(workspace_root / TOOL_CALLS_CSV_FILENAME),
         help="Output path for joined PreToolUse/PostToolUse CSV.",
     )
     parser.add_argument(
         "--skill-invocations-out",
-        default=str(workspace_root / "hooks_skill_invocations.csv"),
+        default=str(workspace_root / SKILL_INVOCATIONS_CSV_FILENAME),
         help="Output path for skill invocations inferred from tool calls.",
     )
     args = parser.parse_args()

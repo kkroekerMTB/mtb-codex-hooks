@@ -224,3 +224,15 @@ python3 scripts/hooks_log_to_csv.py path/to/hooks.log \
   --tool-calls-out path/to/hooks_tool_calls.csv \
   --skill-invocations-out path/to/hooks_skill_invocations.csv
 ```
+
+## Clear The Logs
+
+Remove the workspace-local hook log and all three generated CSV reports with:
+
+```shell
+python3 scripts/clear_hooks_log.py
+```
+
+The command finds the workspace root with Git when available. It is safe to run
+when some or all of the files do not exist; the next hook events and CSV export
+will recreate them.
