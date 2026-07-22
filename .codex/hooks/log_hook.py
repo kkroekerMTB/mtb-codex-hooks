@@ -22,7 +22,42 @@ def log_path() -> Path:
 
 
 def read_payload() -> object:
-    raw_payload = sys.stdin.read()
+    characters = []
+    depth = 0
+    in_string = False
+    escaped = False
+    started = False
+
+    while character := sys.stdin.read(1):
+        characters.append(character)
+
+        if not started:
+            if character.isspace():
+                continue
+            if character not in "[{":
+                characters.append(sys.stdin.read())
+                break
+            started = True
+            depth = 1
+            continue
+
+        if in_string:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+        elif character == '"':
+            in_string = True
+        elif character in "[{":
+            depth += 1
+        elif character in "]}":
+            depth -= 1
+            if depth == 0:
+                break
+
+    raw_payload = "".join(characters)
     if not raw_payload:
         return None
 
