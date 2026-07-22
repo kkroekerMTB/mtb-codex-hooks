@@ -162,12 +162,11 @@ Manual installation does the same thing explicitly:
    Also replace the project-local `Stop` CSV export command:
 
    ```json
-   "cd \"$(git rev-parse --show-toplevel)\" && python3 \"$HOME/.codex/hooks/hooks_log_to_csv.py\" \"$HOME/.codex/hooks.log\""
+   "python3 \"$HOME/.codex/hooks/hooks_log_to_csv.py\" \"$HOME/.codex/hooks.log\""
    ```
 
-   This forces the globally installed hook to run from the workspace root, so
-   the CSV files are still written next to that repository, while explicitly
-   reading the user-level log.
+   The exporter discovers the workspace root itself, so the CSV files are still
+   written next to that repository while explicitly reading the user-level log.
 
 4. Start Codex from any repository and run:
 
@@ -250,9 +249,9 @@ false positive, while an invocation that does not expose its `SKILL.md` path in
 a tool input will not be detected. The `detection_method` column records
 `skill_path_in_tool_input` to make that limitation explicit.
 
-The `Stop` hook runs this command from the repository root after logging the
-stop event, so the CSV reports are refreshed at the end of each conversation.
-The script resolves the current workspace root with `git rev-parse
+The `Stop` hook runs the exporter after logging the stop event, so the CSV
+reports are refreshed at the end of each conversation. The script resolves the
+current workspace root with `git rev-parse
 --show-toplevel` when available, reads the log from that workspace's `.codex`
 directory, and writes the CSV reports at the workspace root. Published
 user-level hooks pass `~/.codex/hooks.log` explicitly instead.
