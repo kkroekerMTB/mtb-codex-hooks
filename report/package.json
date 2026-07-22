@@ -1,0 +1,16 @@
+{
+  "name": "codex-hooks-report",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node src/generate-report.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "chart.js": "4.5.0",
+    "csv-parse": "6.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.8"
+  }
+}

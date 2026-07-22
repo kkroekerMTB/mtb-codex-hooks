@@ -72,9 +72,30 @@ SKILL_INVOCATION_COLUMNS = [
     "detection_method",
 ]
 
+MODEL_CALL_COLUMNS = [
+    "model_call_timestamp",
+    "first_observed_at",
+    "session_id",
+    "turn_id",
+    "model",
+    "reasoning_effort",
+    "input_tokens",
+    "cached_input_tokens",
+    "cache_write_input_tokens",
+    "uncached_input_tokens",
+    "output_tokens",
+    "reasoning_output_tokens",
+    "visible_output_tokens",
+    "total_tokens",
+    "model_context_window",
+    "plan_type",
+    "transcript_path",
+]
+
 EVENTS_CSV_FILENAME = "hooks_events.csv"
 TOOL_CALLS_CSV_FILENAME = "hooks_tool_calls.csv"
 SKILL_INVOCATIONS_CSV_FILENAME = "hooks_skill_invocations.csv"
+MODEL_CALLS_CSV_FILENAME = "hooks_model_calls.csv"
 
 SKILL_PATH_PATTERN = re.compile(
     r"(?P<path>(?:[A-Za-z]:)?[\\/]?"
@@ -122,6 +143,11 @@ def main() -> int:
         default=str(workspace_root / SKILL_INVOCATIONS_CSV_FILENAME),
         help="Output path for skill invocations inferred from tool calls.",
     )
+    parser.add_argument(
+        "--model-calls-out",
+        default=str(workspace_root / MODEL_CALLS_CSV_FILENAME),
+        help="Output path for de-duplicated completed model calls.",
+    )
     args = parser.parse_args()
 
     input_path = Path(args.input).expanduser().resolve()
@@ -130,15 +156,18 @@ def main() -> int:
     skill_invocations_out = resolve_workspace_path(
         workspace_root, Path(args.skill_invocations_out)
     )
+    model_calls_out = resolve_workspace_path(workspace_root, Path(args.model_calls_out))
 
     records = read_records(input_path)
     write_events_csv(records, events_out)
     write_tool_calls_csv(records, tool_calls_out)
     write_skill_invocations_csv(records, skill_invocations_out)
+    write_model_calls_csv(records, model_calls_out)
 
     print(f"Wrote {len(records)} events to {events_out}", file=sys.stderr)
     print(f"Wrote tool-call rows to {tool_calls_out}", file=sys.stderr)
     print(f"Wrote skill-invocation rows to {skill_invocations_out}", file=sys.stderr)
+    print(f"Wrote model-call rows to {model_calls_out}", file=sys.stderr)
     return 0
 
 
@@ -229,6 +258,102 @@ def write_skill_invocations_csv(
         writer.writeheader()
         for record in records:
             writer.writerows(skill_invocation_rows(record))
+
+
+def write_model_calls_csv(records: list[dict[str, Any]], path: Path) -> None:
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=MODEL_CALL_COLUMNS)
+        writer.writeheader()
+        writer.writerows(model_call_rows(records))
+
+
+def model_call_rows(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    rows_by_call: dict[tuple[str, str], dict[str, Any]] = {}
+
+    for record in records:
+        payload = record.get("payload") or {}
+        token_usage = record.get("token_usage") or {}
+        source = token_usage.get("source") or {}
+        call_timestamp = source.get("token_count_timestamp")
+        transcript_path = payload.get("transcript_path") or source.get(
+            "transcript_path"
+        )
+        call_scope = transcript_path or payload.get("session_id")
+        latest = token_usage.get("latest_completed_model_call") or {}
+        if not call_timestamp or not call_scope or not latest:
+            continue
+
+        call_key = (str(call_scope), str(call_timestamp))
+        if call_key in rows_by_call:
+            merge_model_call_metadata(
+                rows_by_call[call_key], record, payload, token_usage, transcript_path
+            )
+            continue
+
+        input_tokens = integer_token_count(latest.get("input_tokens"))
+        cached_input_tokens = integer_token_count(latest.get("cached_input_tokens"))
+        cache_write_input_tokens = integer_token_count(
+            latest.get("cache_write_input_tokens")
+        )
+        output_tokens = integer_token_count(latest.get("output_tokens"))
+        reasoning_output_tokens = integer_token_count(
+            latest.get("reasoning_output_tokens")
+        )
+        row = {
+            "model_call_timestamp": call_timestamp,
+            **model_call_metadata(record, payload, token_usage, transcript_path),
+            "input_tokens": input_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "cache_write_input_tokens": cache_write_input_tokens,
+            "uncached_input_tokens": max(
+                input_tokens - cached_input_tokens - cache_write_input_tokens, 0
+            ),
+            "output_tokens": output_tokens,
+            "reasoning_output_tokens": reasoning_output_tokens,
+            "visible_output_tokens": max(output_tokens - reasoning_output_tokens, 0),
+            "total_tokens": integer_token_count(latest.get("total_tokens")),
+        }
+        rows.append(row)
+        rows_by_call[call_key] = row
+
+    return sorted(rows, key=lambda row: row["model_call_timestamp"])
+
+
+def merge_model_call_metadata(
+    row: dict[str, Any],
+    record: dict[str, Any],
+    payload: dict[str, Any],
+    token_usage: dict[str, Any],
+    transcript_path: Any,
+) -> None:
+    candidates = model_call_metadata(record, payload, token_usage, transcript_path)
+    for field, value in candidates.items():
+        if not row.get(field) and value is not None:
+            row[field] = value
+
+
+def model_call_metadata(
+    record: dict[str, Any],
+    payload: dict[str, Any],
+    token_usage: dict[str, Any],
+    transcript_path: Any,
+) -> dict[str, Any]:
+    rate_limits = token_usage.get("rate_limits") or {}
+    return {
+        "first_observed_at": record.get("timestamp"),
+        "session_id": payload.get("session_id"),
+        "turn_id": payload.get("turn_id"),
+        "model": payload.get("model"),
+        "reasoning_effort": token_usage.get("reasoning_effort"),
+        "model_context_window": token_usage.get("model_context_window"),
+        "plan_type": rate_limits.get("plan_type"),
+        "transcript_path": transcript_path,
+    }
+
+
+def integer_token_count(value: Any) -> int:
+    return value if isinstance(value, int) and value >= 0 else 0
 
 
 def skill_invocation_rows(record: dict[str, Any]) -> list[dict[str, Any]]:

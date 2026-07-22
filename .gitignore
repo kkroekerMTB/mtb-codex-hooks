@@ -4,3 +4,6 @@ dist/
 hooks_events.csv
 hooks_tool_calls.csv
 hooks_skill_invocations.csv
+hooks_model_calls.csv
+report/node_modules/
+report/dist/

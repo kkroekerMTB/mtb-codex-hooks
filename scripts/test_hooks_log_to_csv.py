@@ -40,6 +40,7 @@ class HooksLogToCsvTest(unittest.TestCase):
             events_path = workspace_root / "hooks_events.csv"
             tool_calls_path = workspace_root / "hooks_tool_calls.csv"
             skill_invocations_path = workspace_root / "hooks_skill_invocations.csv"
+            model_calls_path = workspace_root / "hooks_model_calls.csv"
             codex_dir.mkdir()
             log_path.write_text(
                 json.dumps(
@@ -83,6 +84,7 @@ class HooksLogToCsvTest(unittest.TestCase):
             self.assertTrue(events_path.exists())
             self.assertTrue(tool_calls_path.exists())
             self.assertTrue(skill_invocations_path.exists())
+            self.assertTrue(model_calls_path.exists())
 
     def test_main_exports_skill_invocations_inferred_from_tool_calls(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -143,6 +145,68 @@ class HooksLogToCsvTest(unittest.TestCase):
                 ],
                 rows,
             )
+
+    def test_main_exports_each_completed_model_call_once(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace_root = Path(temp_dir) / "workspace"
+            workspace_root.mkdir()
+            codex_dir = workspace_root / ".codex"
+            codex_dir.mkdir()
+            record = {
+                "timestamp": "2026-07-22T15:05:59+00:00",
+                "hook_type": "PostToolUse",
+                "payload": {
+                    "session_id": "session-1",
+                    "turn_id": "turn-1",
+                    "model": "gpt-5.6-sol",
+                    "transcript_path": "/sessions/session-1.jsonl",
+                },
+                "token_usage": {
+                    "reasoning_effort": "medium",
+                    "model_context_window": 258400,
+                    "latest_completed_model_call": {
+                        "input_tokens": 1000,
+                        "cached_input_tokens": 600,
+                        "cache_write_input_tokens": 100,
+                        "output_tokens": 250,
+                        "reasoning_output_tokens": 50,
+                        "total_tokens": 1250,
+                    },
+                    "source": {
+                        "token_count_timestamp": "2026-07-22T15:05:58+00:00"
+                    },
+                },
+            }
+            first_record = json.loads(json.dumps(record))
+            first_record["payload"].pop("model")
+            first_record["token_usage"].pop("reasoning_effort")
+            (codex_dir / "hooks.log").write_text(
+                "\n".join([json.dumps(first_record), json.dumps(record)]) + "\n",
+                encoding="utf-8",
+            )
+
+            old_argv = sys.argv
+            try:
+                with mock.patch(
+                    "hooks_log_to_csv.default_workspace_root", return_value=workspace_root
+                ):
+                    sys.argv = ["hooks_log_to_csv.py"]
+                    with redirect_stderr(io.StringIO()):
+                        exit_code = hooks_log_to_csv.main()
+            finally:
+                sys.argv = old_argv
+
+            self.assertEqual(0, exit_code)
+            with (workspace_root / "hooks_model_calls.csv").open(
+                encoding="utf-8", newline=""
+            ) as csv_file:
+                rows = list(csv.DictReader(csv_file))
+
+            self.assertEqual(1, len(rows))
+            self.assertEqual("300", rows[0]["uncached_input_tokens"])
+            self.assertEqual("200", rows[0]["visible_output_tokens"])
+            self.assertEqual("gpt-5.6-sol", rows[0]["model"])
+            self.assertEqual("medium", rows[0]["reasoning_effort"])
 
     def test_skill_invocations_support_windows_skill_paths(self) -> None:
         record = {

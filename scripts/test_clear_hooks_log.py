@@ -23,6 +23,7 @@ class ClearHooksLogTest(unittest.TestCase):
                 workspace_root / "hooks_events.csv",
                 workspace_root / "hooks_tool_calls.csv",
                 workspace_root / "hooks_skill_invocations.csv",
+                workspace_root / "hooks_model_calls.csv",
             ]
             for target in targets:
                 target.write_text("data", encoding="utf-8")
@@ -39,7 +40,7 @@ class ClearHooksLogTest(unittest.TestCase):
             self.assertEqual(0, exit_code)
             self.assertTrue(all(not target.exists() for target in targets))
             self.assertEqual("keep me", unrelated_csv.read_text(encoding="utf-8"))
-            self.assertIn("Removed 4 files", stdout.getvalue())
+            self.assertIn("Removed 5 files", stdout.getvalue())
 
     def test_main_succeeds_when_log_files_do_not_exist(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

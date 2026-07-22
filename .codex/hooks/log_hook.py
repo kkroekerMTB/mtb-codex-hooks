@@ -59,6 +59,7 @@ def latest_token_usage(payload: object) -> dict:
         "cumulative": None,
         "latest_completed_model_call": None,
         "model_context_window": None,
+        "reasoning_effort": None,
         "rate_limits": None,
         "source": None,
     }
@@ -78,6 +79,8 @@ def latest_token_usage(payload: object) -> dict:
     try:
         transcript = Path(transcript_path)
         last_token_count = None
+        current_reasoning_effort = None
+        last_reasoning_effort = None
         with transcript.open("r", encoding="utf-8") as transcript_file:
             for line in transcript_file:
                 try:
@@ -89,8 +92,13 @@ def latest_token_usage(payload: object) -> dict:
                 if not isinstance(event_payload, dict):
                     continue
 
+                event_reasoning_effort = reasoning_effort(event_payload)
+                if event_reasoning_effort:
+                    current_reasoning_effort = event_reasoning_effort
+
                 if event_payload.get("type") == "token_count":
                     last_token_count = event
+                    last_reasoning_effort = current_reasoning_effort
     except OSError as error:
         return {
             **empty_usage,
@@ -120,9 +128,24 @@ def latest_token_usage(payload: object) -> dict:
         "cumulative": info.get("total_token_usage"),
         "latest_completed_model_call": info.get("last_token_usage"),
         "model_context_window": info.get("model_context_window"),
+        "reasoning_effort": last_reasoning_effort,
         "rate_limits": token_payload.get("rate_limits"),
         "source": source,
     }
+
+
+def reasoning_effort(payload: dict) -> str | None:
+    thread_settings = payload.get("thread_settings") or {}
+    collaboration_mode = payload.get("collaboration_mode") or {}
+    collaboration_settings = collaboration_mode.get("settings") or {}
+    candidates = (
+        payload.get("reasoning_effort"),
+        thread_settings.get("reasoning_effort"),
+        collaboration_settings.get("reasoning_effort"),
+    )
+    return next(
+        (value for value in candidates if isinstance(value, str) and value), None
+    )
 
 
 def main() -> int:

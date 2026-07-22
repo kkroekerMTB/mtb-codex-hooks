@@ -7,6 +7,7 @@ from pathlib import Path
 
 from hooks_log_to_csv import (
     EVENTS_CSV_FILENAME,
+    MODEL_CALLS_CSV_FILENAME,
     SKILL_INVOCATIONS_CSV_FILENAME,
     TOOL_CALLS_CSV_FILENAME,
     default_workspace_root,
@@ -16,6 +17,7 @@ DERIVED_CSV_FILENAMES = (
     EVENTS_CSV_FILENAME,
     TOOL_CALLS_CSV_FILENAME,
     SKILL_INVOCATIONS_CSV_FILENAME,
+    MODEL_CALLS_CSV_FILENAME,
 )
 
 

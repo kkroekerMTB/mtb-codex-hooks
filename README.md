@@ -11,6 +11,7 @@ Here's the official documentation from OpenAI for codex hooks: https://developer
 - `.codex/hooks/log_hook.py` receives each hook payload on stdin and appends a
   JSON line to the workspace-local log.
 - `scripts/hooks_log_to_csv.py` converts the JSONL log into CSV reports.
+- `report/` generates a self-contained HTML usage report from those CSV files.
 - `.codex/hooks.log` is created when a repository-local hook runs.
 
 Each log entry includes:
@@ -196,6 +197,10 @@ By default, this reads `.codex/hooks.log` in the current workspace and writes:
   non-patch `PreToolUse` event whose tool input contains a path ending in
   `skills/<skill-name>/SKILL.md`. Patch payloads are excluded so skill paths in
   code and documentation changes are not counted as invocations.
+- `hooks_model_calls.csv`: one row per completed model call, de-duplicated from
+  the token snapshots repeated across hook events. Input, cached input, cache
+  writes, visible output, reasoning output, model, and reasoning effort are
+  normalized into report-friendly columns.
 
 Skill invocation rows include the session, turn, skill name, invocation time,
 skill path, and detection method. Repeated references to the same skill within
@@ -222,12 +227,44 @@ You can override the paths:
 python3 scripts/hooks_log_to_csv.py path/to/hooks.log \
   --events-out path/to/hooks_events.csv \
   --tool-calls-out path/to/hooks_tool_calls.csv \
-  --skill-invocations-out path/to/hooks_skill_invocations.csv
+  --skill-invocations-out path/to/hooks_skill_invocations.csv \
+  --model-calls-out path/to/hooks_model_calls.csv
 ```
+
+## HTML Usage Report
+
+The static report includes summary metrics, token usage over time, usage by
+model and reasoning level, skill invocation counts, tool-call counts, and an
+estimated API-equivalent dollar cost.
+
+Install its pinned Node dependencies once:
+
+```shell
+npm --prefix report install
+```
+
+Export the latest CSV files and generate the report:
+
+```shell
+python3 scripts/hooks_log_to_csv.py
+npm --prefix report run generate
+```
+
+Open `report/dist/hooks-report.html` directly in a browser. Chart.js and the
+aggregated data are embedded in that one file, so viewing it does not require a
+server, CDN, or network connection.
+
+Pricing is configured in `report/pricing/openai-api.json` using standard OpenAI
+API rates per one million tokens. The configuration is dated and links to its
+source. GPT-5.6 calls over the configured context threshold use the published
+long-context rates. Calls for models without a configured price remain visible
+and are explicitly excluded from the estimated cost. The estimate is
+directional: Codex subscription plans, included usage, credits, special service
+tiers, and an actual invoice may differ.
 
 ## Clear The Logs
 
-Remove the workspace-local hook log and all three generated CSV reports with:
+Remove the workspace-local hook log and all four generated CSV reports with:
 
 ```shell
 python3 scripts/clear_hooks_log.py
