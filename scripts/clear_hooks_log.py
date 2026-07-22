@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remove the workspace hook log and its generated CSV reports."""
+"""Remove the active hook log and the current workspace's CSV reports."""
 
 from __future__ import annotations
 

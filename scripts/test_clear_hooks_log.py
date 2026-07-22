@@ -32,8 +32,11 @@ class ClearHooksLogTest(unittest.TestCase):
             with mock.patch(
                 "clear_hooks_log.default_workspace_root", return_value=workspace_root
             ):
-                with redirect_stdout(stdout):
-                    exit_code = clear_hooks_log.main()
+                with mock.patch(
+                    "clear_hooks_log.default_hooks_log_path", return_value=targets[0]
+                ):
+                    with redirect_stdout(stdout):
+                        exit_code = clear_hooks_log.main()
 
             self.assertEqual(0, exit_code)
             self.assertTrue(all(not target.exists() for target in targets))
@@ -48,8 +51,12 @@ class ClearHooksLogTest(unittest.TestCase):
             with mock.patch(
                 "clear_hooks_log.default_workspace_root", return_value=workspace_root
             ):
-                with redirect_stdout(stdout):
-                    exit_code = clear_hooks_log.main()
+                with mock.patch(
+                    "clear_hooks_log.default_hooks_log_path",
+                    return_value=workspace_root / "hooks.log",
+                ):
+                    with redirect_stdout(stdout):
+                        exit_code = clear_hooks_log.main()
 
             self.assertEqual(0, exit_code)
             self.assertIn("Removed 0 files", stdout.getvalue())

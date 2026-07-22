@@ -15,6 +15,16 @@ import hooks_log_to_csv
 
 
 class HooksLogToCsvTest(unittest.TestCase):
+    def test_default_log_path_uses_user_codex_directory_on_windows(self) -> None:
+        user_home = Path(r"C:\Users\example")
+
+        with mock.patch.object(hooks_log_to_csv.sys, "platform", "win32"):
+            with mock.patch.object(hooks_log_to_csv.Path, "home", return_value=user_home):
+                self.assertEqual(
+                    user_home / ".codex" / "hooks.log",
+                    hooks_log_to_csv.default_hooks_log_path(Path(r"C:\workspace")),
+                )
+
     def test_default_workspace_root_falls_back_to_cwd_without_git(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -63,16 +73,17 @@ class HooksLogToCsvTest(unittest.TestCase):
                 with mock.patch(
                     "hooks_log_to_csv.default_workspace_root", return_value=workspace_root
                 ):
-                    sys.argv = [
-                        "hooks_log_to_csv.py",
-                        "--events-out",
-                        str(events_path),
-                        "--tool-calls-out",
-                        str(tool_calls_path),
-                    ]
+                    with mock.patch.object(hooks_log_to_csv.sys, "platform", "linux"):
+                        sys.argv = [
+                            "hooks_log_to_csv.py",
+                            "--events-out",
+                            str(events_path),
+                            "--tool-calls-out",
+                            str(tool_calls_path),
+                        ]
 
-                    with redirect_stdout(stdout), redirect_stderr(stderr):
-                        exit_code = hooks_log_to_csv.main()
+                        with redirect_stdout(stdout), redirect_stderr(stderr):
+                            exit_code = hooks_log_to_csv.main()
             finally:
                 sys.argv = old_argv
 
@@ -116,9 +127,10 @@ class HooksLogToCsvTest(unittest.TestCase):
                 with mock.patch(
                     "hooks_log_to_csv.default_workspace_root", return_value=workspace_root
                 ):
-                    sys.argv = ["hooks_log_to_csv.py"]
-                    with redirect_stderr(io.StringIO()):
-                        exit_code = hooks_log_to_csv.main()
+                    with mock.patch.object(hooks_log_to_csv.sys, "platform", "linux"):
+                        sys.argv = ["hooks_log_to_csv.py"]
+                        with redirect_stderr(io.StringIO()):
+                            exit_code = hooks_log_to_csv.main()
             finally:
                 sys.argv = old_argv
 
@@ -184,9 +196,10 @@ class HooksLogToCsvTest(unittest.TestCase):
                 with mock.patch(
                     "hooks_log_to_csv.default_workspace_root", return_value=workspace_root
                 ):
-                    sys.argv = ["hooks_log_to_csv.py"]
-                    with redirect_stderr(io.StringIO()):
-                        exit_code = hooks_log_to_csv.main()
+                    with mock.patch.object(hooks_log_to_csv.sys, "platform", "linux"):
+                        sys.argv = ["hooks_log_to_csv.py"]
+                        with redirect_stderr(io.StringIO()):
+                            exit_code = hooks_log_to_csv.main()
             finally:
                 sys.argv = old_argv
 

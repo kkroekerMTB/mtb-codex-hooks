@@ -19,7 +19,10 @@ else:
 
 
 def log_path() -> Path:
-    """Return the workspace log, even when this hook is installed globally."""
+    """Return the platform-appropriate log destination."""
+    if sys.platform == "win32":
+        return Path.home() / ".codex" / "hooks.log"
+
     try:
         workspace_root = subprocess.check_output(
             ["git", "rev-parse", "--show-toplevel"],

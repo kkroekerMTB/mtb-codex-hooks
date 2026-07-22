@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -44,6 +45,11 @@ class LogHookTest(unittest.TestCase):
                 stdin=subprocess.PIPE,
                 text=True,
                 cwd=workspace_root,
+                env={
+                    **os.environ,
+                    "HOME": temp_dir,
+                    "USERPROFILE": temp_dir,
+                },
             )
             try:
                 assert process.stdin is not None
@@ -65,30 +71,39 @@ class LogHookTest(unittest.TestCase):
             nested_dir.mkdir(parents=True)
             subprocess.run(["git", "init", "--quiet"], cwd=workspace_root, check=True)
 
-            with mock.patch.object(log_hook.Path, "cwd", return_value=nested_dir):
-                with mock.patch.object(
-                    log_hook.subprocess,
-                    "check_output",
-                    return_value=str(workspace_root),
-                ):
-                    self.assertEqual(
-                        workspace_root / "hooks.log", log_hook.log_path()
-                    )
+            with mock.patch.object(log_hook.sys, "platform", "linux"):
+                with mock.patch.object(log_hook.Path, "cwd", return_value=nested_dir):
+                    with mock.patch.object(
+                        log_hook.subprocess,
+                        "check_output",
+                        return_value=str(workspace_root),
+                    ):
+                        self.assertEqual(
+                            workspace_root / "hooks.log", log_hook.log_path()
+                        )
 
     def test_log_path_falls_back_to_current_directory_outside_git(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir) / "workspace"
             workspace_root.mkdir()
 
-            with mock.patch.object(log_hook.Path, "cwd", return_value=workspace_root):
-                with mock.patch.object(
-                    log_hook.subprocess,
-                    "check_output",
-                    side_effect=subprocess.CalledProcessError(128, "git"),
-                ):
-                    self.assertEqual(
-                        workspace_root / "hooks.log", log_hook.log_path()
-                    )
+            with mock.patch.object(log_hook.sys, "platform", "linux"):
+                with mock.patch.object(log_hook.Path, "cwd", return_value=workspace_root):
+                    with mock.patch.object(
+                        log_hook.subprocess,
+                        "check_output",
+                        side_effect=subprocess.CalledProcessError(128, "git"),
+                    ):
+                        self.assertEqual(
+                            workspace_root / "hooks.log", log_hook.log_path()
+                        )
+
+    def test_log_path_uses_user_codex_directory_on_windows(self) -> None:
+        user_home = Path(r"C:\Users\example")
+
+        with mock.patch.object(log_hook.sys, "platform", "win32"):
+            with mock.patch.object(log_hook.Path, "home", return_value=user_home):
+                self.assertEqual(user_home / ".codex" / "hooks.log", log_hook.log_path())
 
     def test_latest_token_usage_includes_reasoning_effort_for_latest_call(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

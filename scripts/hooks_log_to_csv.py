@@ -126,7 +126,10 @@ def main() -> int:
         "input",
         nargs="?",
         default=str(default_log),
-        help="Path to the hooks JSONL log. Defaults to <workspace>/hooks.log.",
+        help=(
+            "Path to the hooks JSONL log. Defaults to <workspace>/hooks.log "
+            "except on native Windows, where it defaults to ~/.codex/hooks.log."
+        ),
     )
     parser.add_argument(
         "--events-out",
@@ -185,6 +188,9 @@ def default_workspace_root() -> Path:
 
 
 def default_hooks_log_path(workspace_root: Path) -> Path:
+    if sys.platform == "win32":
+        return Path.home() / ".codex" / "hooks.log"
+
     return workspace_root / "hooks.log"
 
 

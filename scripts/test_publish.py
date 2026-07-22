@@ -46,7 +46,7 @@ class PublishTest(unittest.TestCase):
         self.assertNotIn("$HOME", command)
         self.assert_generated_python_is_valid(command)
 
-    def test_user_level_csv_export_command_uses_workspace_default_log(self) -> None:
+    def test_user_level_csv_export_command_uses_script_default_log(self) -> None:
         command = publish.user_level_csv_export_command("Stop")
 
         self.assertTrue(command.startswith(f'"{sys.executable}" -c '))
@@ -57,7 +57,7 @@ class PublishTest(unittest.TestCase):
         self.assertNotIn("&&", command)
         self.assert_generated_python_is_valid(command)
 
-    def test_published_logger_writes_to_the_workspace(self) -> None:
+    def test_published_logger_uses_platform_log_destination(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             temporary_root = Path(temporary_directory)
             published = publish.publish(temporary_root / ".codex")
@@ -82,7 +82,12 @@ class PublishTest(unittest.TestCase):
             )
 
             self.assertEqual(0, result.returncode, result.stderr)
-            self.assertTrue((workspace_root / "hooks.log").is_file())
+            expected_log = (
+                temporary_root / ".codex" / "hooks.log"
+                if sys.platform == "win32"
+                else workspace_root / "hooks.log"
+            )
+            self.assertTrue(expected_log.is_file())
 
     def test_user_level_command_accepts_windows_style_project_paths(self) -> None:
         command = publish.user_level_command(

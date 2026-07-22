@@ -1,7 +1,8 @@
 # Codex Hooks Example
 
 This repository contains a Codex hooks setup that logs every supported hook type
-to a workspace-local JSONL log at `hooks.log`.
+to a JSONL log. Linux, WSL, and macOS use `hooks.log` at the workspace root;
+native Windows uses `~/.codex/hooks.log`.
 
 Here's the official documentation from OpenAI for codex hooks: https://developers.openai.com/codex/hooks
 
@@ -9,10 +10,11 @@ Here's the official documentation from OpenAI for codex hooks: https://developer
 
 - `.codex/hooks.json` configures all supported Codex hook events.
 - `.codex/hooks/log_hook.py` receives each hook payload on stdin and appends a
-  JSON line to the workspace-local log.
+  JSON line to the platform-appropriate log.
 - `scripts/hooks_log_to_csv.py` converts the JSONL log into CSV reports.
 - `report/` generates a self-contained HTML usage report from those CSV files.
-- `hooks.log` is created at the workspace root when a hook runs.
+- On Linux, WSL, and macOS, `hooks.log` is created at the workspace root when a
+  hook runs. Native Windows hooks use the user-level `.codex/hooks.log` file.
 
 Each log entry includes:
 
@@ -53,9 +55,11 @@ transcript.
    require reviewing them again.
 
 After that, matching hook invocations append JSONL records to
-`hooks.log` at the workspace root. Keeping the source log outside the protected
-`.codex` configuration directory allows the hook to write it from the Codex
-sandbox and keeps hook history scoped to the repository.
+`hooks.log` at the workspace root. Native Windows hooks instead use the
+user-level `.codex/hooks.log`, where the Windows hook process has write access.
+Keeping the Linux, WSL, and macOS source log outside the protected `.codex`
+configuration directory allows the hook to write it from the Codex sandbox and
+keeps hook history scoped to the repository.
 
 ## Install For Every Codex Repository
 
@@ -170,8 +174,10 @@ Manual installation does the same thing explicitly:
    "python3 \"$HOME/.codex/hooks/hooks_log_to_csv.py\""
    ```
 
-   Both the logger and exporter discover the workspace root from the current
-   directory. They write and read `hooks.log` at that workspace's root.
+   The exporter discovers the workspace root from the current directory for
+   its CSV outputs. On Linux, WSL, and macOS, the logger and exporter use
+   `hooks.log` at that workspace's root. On native Windows they use
+   `~/.codex/hooks.log` as the source log.
 
 4. Start Codex from any repository and run:
 
@@ -182,8 +188,10 @@ Manual installation does the same thing explicitly:
 5. Review and trust the user-level hook definitions.
 
 After that, matching hook invocations append JSONL records to
-`hooks.log` at the workspace root where Codex is running. Each workspace's CSV
-exports and HTML report therefore contain only that workspace's activity.
+`hooks.log` at the workspace root where Codex is running. On native Windows,
+matching hook invocations append to the shared `~/.codex/hooks.log` instead.
+Windows CSV exports and HTML reports therefore summarize the activity retained
+in that shared log.
 
 Codex loads matching hooks from all active hook sources, so avoid installing the
 same logger both user-level and project-local unless you intentionally want
@@ -223,7 +231,8 @@ Convert the append-only JSONL log into CSV files with:
 python3 scripts/hooks_log_to_csv.py
 ```
 
-By default, this reads `hooks.log` in the current workspace and writes:
+By default, Linux, WSL, and macOS read `hooks.log` in the current workspace.
+Native Windows reads `~/.codex/hooks.log`. All platforms write:
 
 - `hooks_events.csv`: one row per hook event with flattened session, turn,
   tool, prompt, and token fields.
@@ -253,9 +262,9 @@ a tool input will not be detected. The `detection_method` column records
 
 The `Stop` hook runs the exporter after logging the stop event, so the CSV
 reports are refreshed at the end of each conversation. The script resolves the
-current workspace root with `git rev-parse --show-toplevel` when available,
-reads `hooks.log` from that workspace root, and writes the CSV reports there.
-Published user-level hooks use the same workspace-local behavior.
+current workspace root with `git rev-parse --show-toplevel` when available and
+writes the CSV reports there. Linux, WSL, and macOS read `hooks.log` from that
+workspace root; native Windows reads the shared `~/.codex/hooks.log`.
 
 You can override the paths:
 
@@ -306,12 +315,14 @@ tiers, and an actual invoice may differ.
 
 ## Clear The Logs
 
-Remove the workspace-local hook log and all four generated CSV reports with:
+Remove the active hook log and all four generated CSV reports with:
 
 ```shell
 python3 scripts/clear_hooks_log.py
 ```
 
-The command finds the workspace root with Git when available. It is safe to run
-when some or all of the files do not exist; the next hook events and CSV export
-will recreate them.
+The command finds the workspace root with Git when available. On Linux, WSL,
+and macOS it removes that workspace's `hooks.log`; on native Windows it removes
+the shared `~/.codex/hooks.log`, including events from other Windows
+workspaces. It is safe to run when some or all of the files do not exist; the
+next hook events and CSV export will recreate them.

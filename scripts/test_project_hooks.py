@@ -56,6 +56,9 @@ class ProjectHooksTest(unittest.TestCase):
                 check=True,
             )
 
+            environment = os.environ.copy()
+            environment["HOME"] = str(Path(temp_dir) / "home")
+            environment["USERPROFILE"] = str(Path(temp_dir) / "home")
             result = subprocess.run(
                 self.command_for_current_platform(command_hook),
                 cwd=nested_dir,
@@ -63,10 +66,16 @@ class ProjectHooksTest(unittest.TestCase):
                 text=True,
                 shell=True,
                 capture_output=True,
+                env=environment,
             )
 
             self.assertEqual(0, result.returncode, result.stderr)
-            self.assertTrue((workspace_root / "hooks.log").is_file())
+            expected_log = (
+                Path(environment["USERPROFILE"]) / ".codex" / "hooks.log"
+                if os.name == "nt"
+                else workspace_root / "hooks.log"
+            )
+            self.assertTrue(expected_log.is_file())
 
     def test_csv_export_runs_from_a_workspace_subdirectory(self) -> None:
         config = json.loads(HOOKS_CONFIG_PATH.read_text(encoding="utf-8"))
@@ -80,10 +89,17 @@ class ProjectHooksTest(unittest.TestCase):
             workspace_root = Path(temp_dir) / "workspace"
             scripts_dir = workspace_root / "scripts"
             nested_dir = workspace_root / "src" / "nested"
+            user_home = Path(temp_dir) / "home"
             scripts_dir.mkdir(parents=True)
             nested_dir.mkdir(parents=True)
             shutil.copy2(CSV_EXPORT_PATH, scripts_dir / "hooks_log_to_csv.py")
-            (workspace_root / "hooks.log").write_text(
+            log_path = (
+                user_home / ".codex" / "hooks.log"
+                if os.name == "nt"
+                else workspace_root / "hooks.log"
+            )
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            log_path.write_text(
                 '{"hook_type": "Stop", "payload": {}}\n',
                 encoding="utf-8",
             )
@@ -93,12 +109,16 @@ class ProjectHooksTest(unittest.TestCase):
                 check=True,
             )
 
+            environment = os.environ.copy()
+            environment["HOME"] = str(user_home)
+            environment["USERPROFILE"] = str(user_home)
             result = subprocess.run(
                 self.command_for_current_platform(command_hook),
                 cwd=nested_dir,
                 text=True,
                 shell=True,
                 capture_output=True,
+                env=environment,
             )
 
             self.assertEqual(0, result.returncode, result.stderr)
