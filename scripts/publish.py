@@ -158,7 +158,7 @@ def user_level_csv_export_command(event_name: str) -> str:
         'cd "$(git rev-parse --show-toplevel)" && '
         + user_level_python_command(
             "Path.home()/'.codex'/'hooks'/'hooks_log_to_csv.py'",
-            [],
+            ["str(Path.home()/'.codex'/'hooks.log')"],
         )
     )
 

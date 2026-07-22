@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Append Codex hook invocations to a shared JSONL log."""
+"""Append Codex hook invocations to a JSONL log beside the hook configuration."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ else:
 
 
 def log_path() -> Path:
-    return Path.home() / ".codex" / "hooks.log"
+    return Path(__file__).resolve().parent.parent / "hooks.log"
 
 
 def read_payload() -> object:

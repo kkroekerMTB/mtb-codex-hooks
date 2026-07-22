@@ -1,7 +1,7 @@
 # Codex Hooks Example
 
 This repository contains a Codex hooks setup that logs every supported hook type
-to a shared JSONL log at `~/.codex/hooks.log`.
+to a workspace-local JSONL log at `.codex/hooks.log`.
 
 Here's the official documentation from OpenAI for codex hooks: https://developers.openai.com/codex/hooks
 
@@ -9,9 +9,9 @@ Here's the official documentation from OpenAI for codex hooks: https://developer
 
 - `.codex/hooks.json` configures all supported Codex hook events.
 - `.codex/hooks/log_hook.py` receives each hook payload on stdin and appends a
-  JSON line to the shared log.
-- `scripts/hooks_log_to_csv.py` converts the shared JSONL log into CSV reports.
-- `~/.codex/hooks.log` is created when a hook runs.
+  JSON line to the workspace-local log.
+- `scripts/hooks_log_to_csv.py` converts the JSONL log into CSV reports.
+- `.codex/hooks.log` is created when a repository-local hook runs.
 
 Each log entry includes:
 
@@ -47,7 +47,9 @@ transcript.
    require reviewing them again.
 
 After that, matching hook invocations append JSONL records to
-`~/.codex/hooks.log`.
+`.codex/hooks.log` in the repository. Keeping the source log inside the
+workspace allows the hook to write it from the Codex sandbox and keeps hook
+history scoped to the repository.
 
 ## Install For Every Codex Repository
 
@@ -127,11 +129,12 @@ Manual installation does the same thing explicitly:
    Also replace the project-local `Stop` CSV export command:
 
    ```json
-   "cd \"$(git rev-parse --show-toplevel)\" && python3 \"$HOME/.codex/hooks/hooks_log_to_csv.py\""
+   "cd \"$(git rev-parse --show-toplevel)\" && python3 \"$HOME/.codex/hooks/hooks_log_to_csv.py\" \"$HOME/.codex/hooks.log\""
    ```
 
    This forces the globally installed hook to run from the workspace root, so
-   the CSV files are still written next to that repository.
+   the CSV files are still written next to that repository, while explicitly
+   reading the user-level log.
 
 4. Start Codex from any repository and run:
 
@@ -163,6 +166,7 @@ that run.
 This example configures:
 
 - `SessionStart`
+- `SessionEnd`
 - `PreToolUse`
 - `PermissionRequest`
 - `PostToolUse`
@@ -181,7 +185,7 @@ Convert the append-only JSONL log into CSV files with:
 python3 scripts/hooks_log_to_csv.py
 ```
 
-By default, this reads `~/.codex/hooks.log` and writes:
+By default, this reads `.codex/hooks.log` in the current workspace and writes:
 
 - `hooks_events.csv`: one row per hook event with flattened session, turn,
   tool, prompt, and token fields.
@@ -192,7 +196,9 @@ By default, this reads `~/.codex/hooks.log` and writes:
 The `Stop` hook runs this command from the repository root after logging the
 stop event, so the CSV reports are refreshed at the end of each conversation.
 The script resolves the current workspace root with `git rev-parse
---show-toplevel` when available and writes the CSV reports there.
+--show-toplevel` when available, reads the log from that workspace's `.codex`
+directory, and writes the CSV reports at the workspace root. Published
+user-level hooks pass `~/.codex/hooks.log` explicitly instead.
 
 You can override the paths:
 

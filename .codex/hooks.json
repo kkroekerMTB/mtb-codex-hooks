@@ -13,6 +13,18 @@
         ]
       }
     ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .codex/hooks/log_hook.py SessionEnd || python3 .codex/hooks/log_hook.py SessionEnd",
+            "timeout": 30,
+            "statusMessage": "Logging SessionEnd hook"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "*",

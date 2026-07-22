@@ -65,7 +65,7 @@ TOOL_CALL_COLUMNS = [
 
 def main() -> int:
     workspace_root = default_workspace_root().resolve()
-    default_log = default_hooks_log_path().resolve()
+    default_log = default_hooks_log_path(workspace_root).resolve()
     parser = argparse.ArgumentParser(
         description="Convert hooks.log JSONL records into Power BI-friendly CSV files."
     )
@@ -73,7 +73,7 @@ def main() -> int:
         "input",
         nargs="?",
         default=str(default_log),
-        help="Path to the hooks JSONL log. Defaults to ~/.codex/hooks.log.",
+        help="Path to the hooks JSONL log. Defaults to <workspace>/.codex/hooks.log.",
     )
     parser.add_argument(
         "--events-out",
@@ -113,9 +113,8 @@ def default_workspace_root() -> Path:
     return Path(output)
 
 
-def default_hooks_log_path() -> Path:
-    configured_path = Path.home() / ".codex" / "hooks.log"
-    return configured_path
+def default_hooks_log_path(workspace_root: Path) -> Path:
+    return workspace_root / ".codex" / "hooks.log"
 
 
 def resolve_workspace_path(workspace_root: Path, path: Path) -> Path:

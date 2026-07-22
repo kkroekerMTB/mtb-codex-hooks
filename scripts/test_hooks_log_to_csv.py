@@ -29,12 +29,12 @@ class HooksLogToCsvTest(unittest.TestCase):
                     workspace_root, Path("/tmp/elsewhere/hooks.log")
                 )
 
-    def test_main_uses_home_codex_hooks_log_by_default(self) -> None:
+    def test_main_uses_workspace_codex_hooks_log_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             workspace_root = temp_path / "workspace"
             workspace_root.mkdir()
-            codex_dir = temp_path / ".codex"
+            codex_dir = workspace_root / ".codex"
             log_path = codex_dir / "hooks.log"
             events_path = workspace_root / "hooks_events.csv"
             tool_calls_path = workspace_root / "hooks_tool_calls.csv"
@@ -62,19 +62,16 @@ class HooksLogToCsvTest(unittest.TestCase):
                 with mock.patch(
                     "hooks_log_to_csv.default_workspace_root", return_value=workspace_root
                 ):
-                    with mock.patch(
-                        "pathlib.Path.home", return_value=temp_path
-                    ):
-                        sys.argv = [
-                            "hooks_log_to_csv.py",
-                            "--events-out",
-                            str(events_path),
-                            "--tool-calls-out",
-                            str(tool_calls_path),
-                        ]
+                    sys.argv = [
+                        "hooks_log_to_csv.py",
+                        "--events-out",
+                        str(events_path),
+                        "--tool-calls-out",
+                        str(tool_calls_path),
+                    ]
 
-                        with redirect_stdout(stdout), redirect_stderr(stderr):
-                            exit_code = hooks_log_to_csv.main()
+                    with redirect_stdout(stdout), redirect_stderr(stderr):
+                        exit_code = hooks_log_to_csv.main()
             finally:
                 sys.argv = old_argv
 

@@ -27,6 +27,7 @@ class PublishTest(unittest.TestCase):
         self.assertTrue(command.startswith('cd "$(git rev-parse --show-toplevel)" && '))
         self.assertIn(f'"{sys.executable}" -c ', command)
         self.assertIn("Path.home()/'.codex'/'hooks'/'hooks_log_to_csv.py", command)
+        self.assertIn("Path.home()/'.codex'/'hooks.log'", command)
         self.assertNotIn("$HOME", command)
         self.assert_generated_python_is_valid(command)
 
