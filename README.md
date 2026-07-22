@@ -34,6 +34,11 @@ transcript.
 
 2. Start Codex from inside that repository.
 
+   The hook commands resolve scripts from the Git root, so starting Codex in a
+   repository subdirectory works too. The configuration uses `commandWindows`
+   overrides for native Windows and the regular commands for WSL, Linux, and
+   macOS.
+
 3. Make sure the project is trusted. Project-local hooks are loaded only when
    the project `.codex/` layer is trusted.
 

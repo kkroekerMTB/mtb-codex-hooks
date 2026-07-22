@@ -123,6 +123,7 @@ def publishable_hooks_config(config: dict) -> dict:
                     raise SystemExit(f"Expected hooks.{event_name} command entries to be objects.")
 
                 hook["command"] = user_level_command(event_name, hook.get("command"))
+                hook.pop("commandWindows", None)
 
     return published
 

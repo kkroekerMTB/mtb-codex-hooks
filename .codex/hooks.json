@@ -6,7 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py SessionStart || python3 .codex/hooks/log_hook.py SessionStart",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" SessionStart",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'SessionStart']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging SessionStart hook"
           }
@@ -18,7 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py SessionEnd || python3 .codex/hooks/log_hook.py SessionEnd",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" SessionEnd",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'SessionEnd']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging SessionEnd hook"
           }
@@ -31,7 +33,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py PreToolUse || python3 .codex/hooks/log_hook.py PreToolUse",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PreToolUse",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'PreToolUse']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging PreToolUse hook"
           }
@@ -44,7 +47,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py PermissionRequest || python3 .codex/hooks/log_hook.py PermissionRequest",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PermissionRequest",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'PermissionRequest']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging PermissionRequest hook"
           }
@@ -57,7 +61,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py PostToolUse || python3 .codex/hooks/log_hook.py PostToolUse",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PostToolUse",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'PostToolUse']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging PostToolUse hook"
           }
@@ -70,7 +75,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py PreCompact || python3 .codex/hooks/log_hook.py PreCompact",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PreCompact",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'PreCompact']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging PreCompact hook"
           }
@@ -83,7 +89,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py PostCompact || python3 .codex/hooks/log_hook.py PostCompact",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" PostCompact",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'PostCompact']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging PostCompact hook"
           }
@@ -95,7 +102,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py UserPromptSubmit || python3 .codex/hooks/log_hook.py UserPromptSubmit",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" UserPromptSubmit",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'UserPromptSubmit']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging UserPromptSubmit hook"
           }
@@ -108,7 +116,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py SubagentStart || python3 .codex/hooks/log_hook.py SubagentStart",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" SubagentStart",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'SubagentStart']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging SubagentStart hook"
           }
@@ -121,7 +130,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py SubagentStop || python3 .codex/hooks/log_hook.py SubagentStop",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" SubagentStop",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'SubagentStop']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging SubagentStop hook"
           }
@@ -133,13 +143,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .codex/hooks/log_hook.py Stop || python3 .codex/hooks/log_hook.py Stop",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/log_hook.py\" Stop",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'.codex'/'hooks'/'log_hook.py'; sys.argv=[str(script), 'Stop']; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Logging Stop hook"
           },
           {
             "type": "command",
-            "command": "python scripts/hooks_log_to_csv.py || python3 scripts/hooks_log_to_csv.py",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/hooks_log_to_csv.py\"",
+            "commandWindows": "py -3 -c \"from pathlib import Path; import runpy, subprocess, sys; script=Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True).strip())/'scripts'/'hooks_log_to_csv.py'; sys.argv=[str(script)]; runpy.run_path(str(script), run_name='__main__')\"",
             "timeout": 30,
             "statusMessage": "Exporting hook CSV reports"
           }

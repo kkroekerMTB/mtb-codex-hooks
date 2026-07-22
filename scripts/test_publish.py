@@ -22,6 +22,16 @@ class PublishTest(unittest.TestCase):
             if sys.platform != "win32":
                 self.assertTrue(generator.stat().st_mode & 0o111)
 
+    def test_publish_does_not_keep_project_windows_overrides(self) -> None:
+        project_config = publish.read_json(publish.PROJECT_HOOKS_JSON)
+
+        published_config = publish.publishable_hooks_config(project_config)
+
+        for entries in published_config["hooks"].values():
+            for entry in entries:
+                for command_hook in entry["hooks"]:
+                    self.assertNotIn("commandWindows", command_hook)
+
     def test_user_level_log_command_uses_python_home_resolution(self) -> None:
         command = publish.user_level_log_command(
             "SessionStart",
