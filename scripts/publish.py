@@ -15,6 +15,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_HOOKS_JSON = REPO_ROOT / ".codex" / "hooks.json"
 PROJECT_LOG_HOOK = REPO_ROOT / ".codex" / "hooks" / "log_hook.py"
 PROJECT_CSV_EXPORT = REPO_ROOT / "scripts" / "hooks_log_to_csv.py"
+PROJECT_REPORT_GENERATOR = (
+    REPO_ROOT / "report" / "bin" / "generate_hooks_report.mjs"
+)
 DEFAULT_OUTPUT = REPO_ROOT / "dist" / "codex-logging-hooks"
 PYTHON_EXECUTABLE = Path(sys.executable)
 
@@ -60,6 +63,8 @@ def publish(output: Path = DEFAULT_OUTPUT) -> Path:
     make_executable(hooks_dir / "log_hook.py")
     shutil.copy2(PROJECT_CSV_EXPORT, hooks_dir / "hooks_log_to_csv.py")
     make_executable(hooks_dir / "hooks_log_to_csv.py")
+    shutil.copy2(PROJECT_REPORT_GENERATOR, hooks_dir / "generate_hooks_report.mjs")
+    make_executable(hooks_dir / "generate_hooks_report.mjs")
 
     return output_dir
 

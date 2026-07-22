@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:standalone": "node scripts/build-standalone.mjs",
     "generate": "node src/generate-report.mjs",
     "test": "node --test"
   },

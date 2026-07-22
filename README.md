@@ -71,6 +71,7 @@ a user's `~/.codex` directory:
 - `hooks.json`
 - `hooks/log_hook.py`
 - `hooks/hooks_log_to_csv.py`
+- `hooks/generate_hooks_report.mjs`
 
 Then install them with:
 
@@ -81,6 +82,19 @@ python3 scripts/install.py
 The install script runs `scripts/publish.py` with the default output directory,
 then copies the published artifacts into `~/.codex`, overwriting the installed
 `hooks.json` and published files under `~/.codex/hooks/`.
+
+The installed report generator is a prebuilt Node script with Chart.js, CSV
+parsing, pricing, and report code embedded. From any workspace whose global
+hooks have produced the CSV exports, run:
+
+```shell
+node ~/.codex/hooks/generate_hooks_report.mjs
+```
+
+It reads the CSV files in the current directory and writes
+`hooks-report.html` there. No checkout of this repository and no `npm install`
+are needed at report-generation time. Use `--input-dir` or `--output` to
+override either path.
 
 To install into another Codex directory, run:
 
@@ -99,8 +113,10 @@ Manual installation does the same thing explicitly:
    mkdir -p ~/.codex/hooks
    cp .codex/hooks/log_hook.py ~/.codex/hooks/log_hook.py
    cp scripts/hooks_log_to_csv.py ~/.codex/hooks/hooks_log_to_csv.py
+   cp report/bin/generate_hooks_report.mjs ~/.codex/hooks/generate_hooks_report.mjs
    chmod +x ~/.codex/hooks/log_hook.py
    chmod +x ~/.codex/hooks/hooks_log_to_csv.py
+   chmod +x ~/.codex/hooks/generate_hooks_report.mjs
    ```
 
 2. Copy this repository's hook configuration to your user-level Codex config:
@@ -147,6 +163,10 @@ Manual installation does the same thing explicitly:
 
 After that, matching hook invocations from every workspace append JSONL records
 to the same `~/.codex/hooks.log` file.
+
+Because the global exporter reads that shared log, each workspace's generated
+CSVs—and therefore its HTML report—summarize all activity currently retained in
+the user-level log, not only activity from that workspace.
 
 Codex loads matching hooks from all active hook sources, so avoid installing the
 same logger both user-level and project-local unless you intentionally want
@@ -253,6 +273,12 @@ npm --prefix report run generate
 Open `report/dist/hooks-report.html` directly in a browser. Chart.js and the
 aggregated data are embedded in that one file, so viewing it does not require a
 server, CDN, or network connection.
+
+To rebuild the standalone generator included by `scripts/publish.py`, run:
+
+```shell
+npm --prefix report run build:standalone
+```
 
 Pricing is configured in `report/pricing/openai-api.json` using standard OpenAI
 API rates per one million tokens. The configuration is dated and links to its
