@@ -192,6 +192,22 @@ By default, this reads `.codex/hooks.log` in the current workspace and writes:
 - `hooks_tool_calls.csv`: one row per tool call, joining `PreToolUse` and
   `PostToolUse` records by `tool_use_id` so reports can include duration and
   response previews.
+- `hooks_skill_invocations.csv`: one row per skill inferred from each
+  non-patch `PreToolUse` event whose tool input contains a path ending in
+  `skills/<skill-name>/SKILL.md`. Patch payloads are excluded so skill paths in
+  code and documentation changes are not counted as invocations.
+
+Skill invocation rows include the session, turn, skill name, invocation time,
+skill path, and detection method. Repeated references to the same skill within
+one tool call produce one row. Unix and Windows paths are supported, including
+quoted paths containing spaces.
+
+These rows are inferred from skill paths in tool inputs because Codex hook
+payloads do not currently include a dedicated skill-invocation event. A tool
+call that mentions a skill path without invoking it may therefore produce a
+false positive, while an invocation that does not expose its `SKILL.md` path in
+a tool input will not be detected. The `detection_method` column records
+`skill_path_in_tool_input` to make that limitation explicit.
 
 The `Stop` hook runs this command from the repository root after logging the
 stop event, so the CSV reports are refreshed at the end of each conversation.
@@ -205,5 +221,6 @@ You can override the paths:
 ```shell
 python3 scripts/hooks_log_to_csv.py path/to/hooks.log \
   --events-out path/to/hooks_events.csv \
-  --tool-calls-out path/to/hooks_tool_calls.csv
+  --tool-calls-out path/to/hooks_tool_calls.csv \
+  --skill-invocations-out path/to/hooks_skill_invocations.csv
 ```

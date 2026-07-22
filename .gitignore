@@ -3,3 +3,4 @@ __pycache__
 dist/
 hooks_events.csv
 hooks_tool_calls.csv
+hooks_skill_invocations.csv

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import sys
 import subprocess
 from datetime import datetime
@@ -62,6 +63,33 @@ TOOL_CALL_COLUMNS = [
     "raw_tool_response_json",
 ]
 
+SKILL_INVOCATION_COLUMNS = [
+    "session_id",
+    "turn_id",
+    "skill_name",
+    "invoked_at",
+    "skill_path",
+    "detection_method",
+]
+
+SKILL_PATH_PATTERN = re.compile(
+    r"(?P<path>(?:[A-Za-z]:)?[\\/]?"
+    r"(?:[^\\/\s\"'|;&(),]+[\\/])*"
+    r"skills[\\/]"
+    r"(?:[^\\/\s\"'|;&(),]+[\\/])*"
+    r"[^\\/\s\"'|;&(),]+[\\/]SKILL\.md)",
+    re.IGNORECASE,
+)
+
+QUOTED_SKILL_PATH_PATTERN = re.compile(
+    r"(?P<quote>[\"'])(?P<path>(?:[A-Za-z]:)?[\\/]?"
+    r"(?:[^\\/\"']+[\\/])*"
+    r"skills[\\/]"
+    r"(?:[^\\/\"']+[\\/])*"
+    r"[^\\/\"']+[\\/]SKILL\.md)(?P=quote)",
+    re.IGNORECASE,
+)
+
 
 def main() -> int:
     workspace_root = default_workspace_root().resolve()
@@ -85,18 +113,28 @@ def main() -> int:
         default=str(workspace_root / "hooks_tool_calls.csv"),
         help="Output path for joined PreToolUse/PostToolUse CSV.",
     )
+    parser.add_argument(
+        "--skill-invocations-out",
+        default=str(workspace_root / "hooks_skill_invocations.csv"),
+        help="Output path for skill invocations inferred from tool calls.",
+    )
     args = parser.parse_args()
 
     input_path = Path(args.input).expanduser().resolve()
     events_out = resolve_workspace_path(workspace_root, Path(args.events_out))
     tool_calls_out = resolve_workspace_path(workspace_root, Path(args.tool_calls_out))
+    skill_invocations_out = resolve_workspace_path(
+        workspace_root, Path(args.skill_invocations_out)
+    )
 
     records = read_records(input_path)
     write_events_csv(records, events_out)
     write_tool_calls_csv(records, tool_calls_out)
+    write_skill_invocations_csv(records, skill_invocations_out)
 
     print(f"Wrote {len(records)} events to {events_out}", file=sys.stderr)
     print(f"Wrote tool-call rows to {tool_calls_out}", file=sys.stderr)
+    print(f"Wrote skill-invocation rows to {skill_invocations_out}", file=sys.stderr)
     return 0
 
 
@@ -177,6 +215,69 @@ def write_tool_calls_csv(records: list[dict[str, Any]], path: Path) -> None:
         writer = csv.DictWriter(csv_file, fieldnames=TOOL_CALL_COLUMNS)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def write_skill_invocations_csv(
+    records: list[dict[str, Any]], path: Path
+) -> None:
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=SKILL_INVOCATION_COLUMNS)
+        writer.writeheader()
+        for record in records:
+            writer.writerows(skill_invocation_rows(record))
+
+
+def skill_invocation_rows(record: dict[str, Any]) -> list[dict[str, Any]]:
+    if record.get("hook_type") != "PreToolUse":
+        return []
+
+    payload = record.get("payload") or {}
+    if str(payload.get("tool_name", "")).casefold() == "apply_patch":
+        return []
+
+    tool_input = payload.get("tool_input") or {}
+    skill_paths = {
+        skill_path
+        for value in string_values(tool_input)
+        for skill_path in skill_paths_in_text(value)
+    }
+
+    return [
+        {
+            "session_id": payload.get("session_id"),
+            "turn_id": payload.get("turn_id"),
+            "skill_name": re.split(r"[\\/]", skill_path)[-2],
+            "invoked_at": record.get("timestamp"),
+            "skill_path": skill_path,
+            "detection_method": "skill_path_in_tool_input",
+        }
+        for skill_path in sorted(skill_paths)
+    ]
+
+
+def skill_paths_in_text(value: str) -> set[str]:
+    quoted_paths = {
+        match.group("path") for match in QUOTED_SKILL_PATH_PATTERN.finditer(value)
+    }
+    unquoted_paths = {
+        match.group("path") for match in SKILL_PATH_PATTERN.finditer(value)
+    }
+    suffixes_of_quoted_paths = {
+        path
+        for path in unquoted_paths
+        if any(quoted_path.endswith(path) for quoted_path in quoted_paths)
+    }
+    return quoted_paths | (unquoted_paths - suffixes_of_quoted_paths)
+
+
+def string_values(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in string_values(item)]
+    if isinstance(value, list):
+        return [text for item in value for text in string_values(item)]
+    return []
 
 
 def event_row(record: dict[str, Any]) -> dict[str, Any]:
