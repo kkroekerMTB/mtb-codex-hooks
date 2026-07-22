@@ -20,7 +20,113 @@ export function estimateModelCallCost(modelCall, pricing) {
   );
 }
 
-export function buildReportData({ modelCalls, skills, tools }, pricing) {
+export function buildReportData({ events = [], modelCalls, skills, tools }, pricing) {
+  const rows = { modelCalls, skills, tools };
+  const report = buildSummary(rows, pricing);
+  const sessionIds = [
+    ...new Set(
+      [...modelCalls, ...skills, ...tools]
+        .map((row) => row.session_id)
+        .filter(Boolean),
+    ),
+  ].sort();
+  const sessionMetadata = metadataBySession(events, modelCalls, skills, tools);
+
+  return {
+    ...report,
+    sessionIds,
+    sessions: sessionIds.map((id) => ({
+      id,
+      startedAt: sessionMetadata.get(id)?.startedAt || null,
+      summary: sessionMetadata.get(id)?.summary || "No summary available",
+    })),
+    reportsBySession: Object.fromEntries(
+      sessionIds.map((sessionId) => [
+        sessionId,
+        buildSummary(
+          {
+            modelCalls: modelCalls.filter((row) => row.session_id === sessionId),
+            skills: skills.filter((row) => row.session_id === sessionId),
+            tools: tools.filter((row) => row.session_id === sessionId),
+          },
+          pricing,
+        ),
+      ]),
+    ),
+  };
+}
+
+function metadataBySession(events, modelCalls, skills, tools) {
+  const metadata = new Map();
+  const timestamps = [
+    ...events.map((row) => [row.session_id, row.event_timestamp]),
+    ...modelCalls.map((row) => [
+      row.session_id,
+      row.first_observed_at || row.model_call_timestamp,
+    ]),
+    ...skills.map((row) => [row.session_id, row.invoked_at]),
+    ...tools.map((row) => [
+      row.session_id,
+      row.started_at || row.finished_at,
+    ]),
+  ];
+
+  for (const [sessionId, timestamp] of timestamps) {
+    if (!sessionId || !timestamp) {
+      continue;
+    }
+    const current = metadata.get(sessionId) || {};
+    if (
+      !current.startedAt ||
+      timestampValue(timestamp) < timestampValue(current.startedAt)
+    ) {
+      current.startedAt = timestamp;
+    }
+    metadata.set(sessionId, current);
+  }
+
+  const sortedEvents = [...events].sort((left, right) =>
+    timestampValue(left.event_timestamp) - timestampValue(right.event_timestamp),
+  );
+  for (const event of sortedEvents) {
+    if (!event.session_id) {
+      continue;
+    }
+    const current = metadata.get(event.session_id) || {};
+    if (!current.prompt && event.prompt) {
+      current.prompt = briefText(event.prompt);
+    }
+    if (event.last_assistant_message) {
+      current.assistantMessage = briefText(event.last_assistant_message);
+    }
+    metadata.set(event.session_id, current);
+  }
+
+  for (const current of metadata.values()) {
+    current.summary = current.assistantMessage || current.prompt;
+    delete current.assistantMessage;
+    delete current.prompt;
+  }
+  return metadata;
+}
+
+function briefText(value) {
+  const text = String(value)
+    .replace(/^[#>*\-\s]+/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const firstSentence = text.match(/^.{1,72}?[.!?](?=\s|$)/u)?.[0] || text;
+  return firstSentence.length > 72
+    ? `${firstSentence.slice(0, 69).trimEnd()}…`
+    : firstSentence;
+}
+
+function timestampValue(timestamp) {
+  const value = Date.parse(timestamp || "");
+  return Number.isNaN(value) ? Number.POSITIVE_INFINITY : value;
+}
+
+function buildSummary({ modelCalls, skills, tools }, pricing) {
   const timeline = new Map();
   const modelReasoning = new Map();
   const sessions = new Set();

@@ -23,12 +23,20 @@ test("generates a self-contained HTML report from the exported CSV files", async
       ].join("\n"),
     );
     await writeFile(
+      path.join(tempDirectory, "hooks_events.csv"),
+      [
+        "event_timestamp,session_id,prompt,last_assistant_message",
+        '2026-07-22T09:58:00Z,session-1,"Please improve the report labels.",',
+        '2026-07-22T10:05:00Z,session-1,,"Improved report session labels."',
+      ].join("\n"),
+    );
+    await writeFile(
       path.join(tempDirectory, "hooks_skill_invocations.csv"),
-      "skill_name\nimplement\nimplement\n",
+      "session_id,skill_name\nsession-1,implement\nsession-1,implement\n",
     );
     await writeFile(
       path.join(tempDirectory, "hooks_tool_calls.csv"),
-      "tool_name,status,duration_ms\nBash,completed,100\n",
+      "session_id,tool_name,status,duration_ms\nsession-1,Bash,completed,100\n",
     );
 
     await execFileAsync(
@@ -49,6 +57,11 @@ test("generates a self-contained HTML report from the exported CSV files", async
     assert.match(html, /Skills invoked/);
     assert.match(html, /Tool calls/);
     assert.match(html, /API-equivalent cost/);
+    assert.match(html, /<select id="session-filter">/);
+    assert.match(html, /All sessions/);
+    assert.match(html, /reportsBySession/);
+    assert.match(html, /2026-07-22T09:58:00Z/);
+    assert.match(html, /Improved report session labels\./);
     assert.match(html, /gpt-5\.6-sol/);
     assert.match(html, /Share of all calls/);
     assert.doesNotMatch(html, /<script[^>]+src=/);
@@ -74,11 +87,11 @@ test("standalone generator needs no repository or installed packages at runtime"
     );
     await writeFile(
       path.join(workspacePath, "hooks_skill_invocations.csv"),
-      "skill_name\nimplement\n",
+      "session_id,skill_name\nsession-1,implement\n",
     );
     await writeFile(
       path.join(workspacePath, "hooks_tool_calls.csv"),
-      "tool_name,status,duration_ms\nBash,completed,100\n",
+      "session_id,tool_name,status,duration_ms\nsession-1,Bash,completed,100\n",
     );
 
     await buildStandaloneReportGenerator(generatorPath);

@@ -12,6 +12,9 @@ export async function generateReport({
   pricing,
 }) {
   const inputs = {
+    events: await readOptionalCsv(
+      path.join(inputDirectory, "hooks_events.csv"),
+    ),
     modelCalls: await readCsv(path.join(inputDirectory, "hooks_model_calls.csv")),
     skills: await readCsv(
       path.join(inputDirectory, "hooks_skill_invocations.csv"),
@@ -54,4 +57,15 @@ async function readCsv(filePath) {
     skip_empty_lines: true,
     bom: true,
   });
+}
+
+async function readOptionalCsv(filePath) {
+  try {
+    return await readCsv(filePath);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
 }

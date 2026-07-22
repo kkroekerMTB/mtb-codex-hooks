@@ -280,7 +280,10 @@ python3 scripts/hooks_log_to_csv.py path/to/hooks.log \
 
 The static report includes summary metrics, token usage over time, usage by
 model and reasoning level, skill invocation counts, tool-call counts, and an
-estimated API-equivalent dollar cost.
+estimated API-equivalent dollar cost. The session filter updates every metric
+and chart to show one particular session. Session labels include the local date
+and time, a brief summary taken from the latest assistant message (or the first
+user prompt when no assistant message was captured), and the session ID.
 
 Install its pinned Node dependencies once:
 

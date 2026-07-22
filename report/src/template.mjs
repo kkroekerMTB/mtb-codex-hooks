@@ -17,6 +17,13 @@ export function renderHtml(reportData, browserBundle) {
       <p>Generated ${escapeHtml(reportData.generatedAt)} from normalized hook CSV data.</p>
     </header>
 
+    <section class="filters" aria-label="Report filters">
+      <label for="session-filter">Session</label>
+      <select id="session-filter">
+        <option value="">All sessions</option>
+      </select>
+    </section>
+
     <section class="summary" aria-label="Usage summary">
       ${card("API-equivalent cost", "cost")}
       ${card("Total tokens", "tokens")}
@@ -97,6 +104,10 @@ h1 { margin-bottom: 8px; font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -0
 h2 { margin-bottom: 6px; font-size: 1.1rem; }
 p { color: #596579; }
 .eyebrow { margin-bottom: 8px; color: #2563eb; font-size: .75rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.filters { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.filters label { color: #364152; font-size: .85rem; font-weight: 700; }
+.filters select { width: min(100%, 70rem); padding: 10px 36px 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; color: #172033; background: #fff; font: inherit; }
+.filters select:focus { outline: 3px solid rgba(37,99,235,.2); border-color: #2563eb; }
 .summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
 .summary-card, .panel { border: 1px solid #d9e0ea; border-radius: 16px; background: rgba(255,255,255,.94); box-shadow: 0 12px 32px rgba(37,50,75,.07); }
 .summary-card { padding: 18px; }

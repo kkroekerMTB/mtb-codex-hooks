@@ -1,6 +1,8 @@
 import Chart from "chart.js/auto";
 
 const report = window.__CODEX_HOOKS_REPORT__;
+let activeReport = report;
+let charts = [];
 const colors = {
   blue: "#2563eb",
   cyan: "#0891b2",
@@ -11,62 +13,87 @@ const colors = {
   slate: "#64748b",
 };
 
-document.querySelector("[data-value='cost']").textContent = currency(
-  report.summary.estimatedCost,
-);
-document.querySelector("[data-value='tokens']").textContent = integer(
-  report.summary.totalTokens,
-);
-document.querySelector("[data-value='cache']").textContent = percent(
-  report.summary.cacheHitRate,
-);
-document.querySelector("[data-value='calls']").textContent = integer(
-  report.summary.modelCalls,
-);
-document.querySelector("[data-value='sessions']").textContent = integer(
-  report.summary.sessions,
-);
-
-if (report.summary.unpricedModels.length > 0) {
-  const warning = document.querySelector("[data-unpriced-models]");
-  warning.hidden = false;
-  warning.textContent = `No price configured for: ${report.summary.unpricedModels.join(", ")}. Their tokens are shown but excluded from estimated cost.`;
+const sessionFilter = document.querySelector("#session-filter");
+for (const session of report.sessions) {
+  sessionFilter.add(
+    new Option(
+      `${formatSessionDate(session.startedAt)} - ${session.summary} (${session.id})`,
+      session.id,
+    ),
+  );
 }
-
-new Chart(document.querySelector("#token-timeline"), {
-  type: "line",
-  data: {
-    labels: report.timeline.map((row) => row.date),
-    datasets: [
-      dataset("Uncached input", "uncachedInput", colors.blue),
-      dataset("Cached input", "cachedInput", colors.cyan),
-      dataset("Cache writes", "cacheWrite", colors.gold),
-      dataset("Visible output", "visibleOutput", colors.green),
-      dataset("Reasoning output", "reasoningOutput", colors.purple),
-      {
-        label: "Estimated cost",
-        data: report.timeline.map((row) => row.estimatedCost),
-        borderColor: colors.slate,
-        backgroundColor: colors.slate,
-        borderDash: [6, 4],
-        fill: false,
-        pointRadius: 3,
-        tension: 0.25,
-        yAxisID: "cost",
-      },
-    ],
-  },
-  options: tokenTimelineOptions(),
+sessionFilter.addEventListener("change", () => {
+  activeReport = report.reportsBySession[sessionFilter.value] || report;
+  renderReport();
 });
 
-new Chart(document.querySelector("#model-reasoning"), {
+renderReport();
+
+function renderReport() {
+  document.querySelector("[data-value='cost']").textContent = currency(
+    activeReport.summary.estimatedCost,
+  );
+  document.querySelector("[data-value='tokens']").textContent = integer(
+    activeReport.summary.totalTokens,
+  );
+  document.querySelector("[data-value='cache']").textContent = percent(
+    activeReport.summary.cacheHitRate,
+  );
+  document.querySelector("[data-value='calls']").textContent = integer(
+    activeReport.summary.modelCalls,
+  );
+  document.querySelector("[data-value='sessions']").textContent = integer(
+    activeReport.summary.sessions,
+  );
+
+  const warning = document.querySelector("[data-unpriced-models]");
+  warning.hidden = activeReport.summary.unpricedModels.length === 0;
+  warning.textContent = warning.hidden
+    ? ""
+    : `No price configured for: ${activeReport.summary.unpricedModels.join(", ")}. Their tokens are shown but excluded from estimated cost.`;
+
+  for (const chart of charts) {
+    chart.destroy();
+  }
+  charts = createCharts();
+}
+
+function createCharts() {
+  return [
+    new Chart(document.querySelector("#token-timeline"), {
+      type: "line",
+      data: {
+        labels: activeReport.timeline.map((row) => row.date),
+        datasets: [
+          dataset("Uncached input", "uncachedInput", colors.blue),
+          dataset("Cached input", "cachedInput", colors.cyan),
+          dataset("Cache writes", "cacheWrite", colors.gold),
+          dataset("Visible output", "visibleOutput", colors.green),
+          dataset("Reasoning output", "reasoningOutput", colors.purple),
+          {
+            label: "Estimated cost",
+            data: activeReport.timeline.map((row) => row.estimatedCost),
+            borderColor: colors.slate,
+            backgroundColor: colors.slate,
+            borderDash: [6, 4],
+            fill: false,
+            pointRadius: 3,
+            tension: 0.25,
+            yAxisID: "cost",
+          },
+        ],
+      },
+      options: tokenTimelineOptions(),
+    }),
+
+    new Chart(document.querySelector("#model-reasoning"), {
   type: "doughnut",
   data: {
-    labels: report.modelReasoning.map((row) => row.label),
+    labels: activeReport.modelReasoning.map((row) => row.label),
     datasets: [
       {
-        data: report.modelReasoning.map((row) => row.tokens),
-        backgroundColor: palette(report.modelReasoning.length),
+        data: activeReport.modelReasoning.map((row) => row.tokens),
+        backgroundColor: palette(activeReport.modelReasoning.length),
         borderWidth: 2,
         borderColor: "#fff",
       },
@@ -79,44 +106,44 @@ new Chart(document.querySelector("#model-reasoning"), {
       tooltip: {
         callbacks: {
           afterLabel(context) {
-            return `Estimated cost: ${currency(report.modelReasoning[context.dataIndex].estimatedCost)}`;
+            return `Estimated cost: ${currency(activeReport.modelReasoning[context.dataIndex].estimatedCost)}`;
           },
         },
       },
     },
   },
-});
+    }),
 
-new Chart(document.querySelector("#skills"), {
+    new Chart(document.querySelector("#skills"), {
   type: "bar",
   data: {
-    labels: report.skills.map((row) => row.name),
+    labels: activeReport.skills.map((row) => row.name),
     datasets: [
       {
         label: "Invocations",
-        data: report.skills.map((row) => row.count),
+        data: activeReport.skills.map((row) => row.count),
         backgroundColor: colors.purple,
         borderRadius: 5,
       },
     ],
   },
   options: chartOptions({ horizontal: true, integersOnly: true }),
-});
+    }),
 
-new Chart(document.querySelector("#tools"), {
+    new Chart(document.querySelector("#tools"), {
   type: "bar",
   data: {
-    labels: report.tools.map((row) => row.name),
+    labels: activeReport.tools.map((row) => row.name),
     datasets: [
       {
         label: "Completed",
-        data: report.tools.map((row) => row.completed),
+        data: activeReport.tools.map((row) => row.completed),
         backgroundColor: colors.blue,
         borderRadius: 5,
       },
       {
         label: "Incomplete",
-        data: report.tools.map((row) => row.incomplete),
+        data: activeReport.tools.map((row) => row.incomplete),
         backgroundColor: colors.red,
         borderRadius: 5,
       },
@@ -128,10 +155,10 @@ new Chart(document.querySelector("#tools"), {
       tooltip: {
         callbacks: {
           afterBody(items) {
-            const tool = report.tools[items[0].dataIndex];
+            const tool = activeReport.tools[items[0].dataIndex];
             const toolCalls = tool.completed + tool.incomplete;
             const details = [
-              `Share of all calls: ${percent(toolCalls / report.summary.toolCalls)}`,
+              `Share of all calls: ${percent(toolCalls / activeReport.summary.toolCalls)}`,
             ];
             if (tool.averageDurationMs !== null) {
               details.push(
@@ -144,16 +171,18 @@ new Chart(document.querySelector("#tools"), {
       },
     },
   },
-});
+    }),
+  ];
+}
 
 function dataset(label, field, color) {
   return {
     label,
-    data: report.timeline.map((row) => row[field]),
+    data: activeReport.timeline.map((row) => row[field]),
     borderColor: color,
     backgroundColor: `${color}bf`,
     fill: true,
-    pointRadius: report.timeline.length > 40 ? 0 : 3,
+    pointRadius: activeReport.timeline.length > 40 ? 0 : 3,
     tension: 0.25,
   };
 }
@@ -212,4 +241,23 @@ function percent(value) {
     style: "percent",
     maximumFractionDigits: 1,
   }).format(value);
+}
+
+function formatSessionDate(timestamp) {
+  if (!timestamp || Number.isNaN(new Date(timestamp).getTime())) {
+    return "Unknown date";
+  }
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+      .formatToParts(new Date(timestamp))
+      .map(({ type, value }) => [type, value]),
+  );
+  return `${parts.weekday} ${parts.month} ${parts.day}, ${parts.year} ${parts.hour}:${parts.minute} ${parts.dayPeriod}`;
 }
