@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Append Codex hook invocations to a JSONL log beside the hook configuration."""
+"""Append Codex hook invocations to the current workspace's JSONL log."""
 
 from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -18,7 +19,17 @@ else:
 
 
 def log_path() -> Path:
-    return Path(__file__).resolve().parent.parent / "hooks.log"
+    """Return the workspace log, even when this hook is installed globally."""
+    try:
+        workspace_root = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return Path.cwd() / "hooks.log"
+
+    return Path(workspace_root) / "hooks.log"
 
 
 def read_payload() -> object:

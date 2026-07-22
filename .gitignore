@@ -1,4 +1,4 @@
-.codex/hooks.log
+hooks.log
 __pycache__
 dist/
 hooks_events.csv

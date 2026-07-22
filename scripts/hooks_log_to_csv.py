@@ -126,7 +126,7 @@ def main() -> int:
         "input",
         nargs="?",
         default=str(default_log),
-        help="Path to the hooks JSONL log. Defaults to <workspace>/.codex/hooks.log.",
+        help="Path to the hooks JSONL log. Defaults to <workspace>/hooks.log.",
     )
     parser.add_argument(
         "--events-out",
@@ -185,7 +185,7 @@ def default_workspace_root() -> Path:
 
 
 def default_hooks_log_path(workspace_root: Path) -> Path:
-    return workspace_root / ".codex" / "hooks.log"
+    return workspace_root / "hooks.log"
 
 
 def resolve_workspace_path(workspace_root: Path, path: Path) -> Path:

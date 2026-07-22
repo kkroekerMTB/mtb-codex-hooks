@@ -10,6 +10,7 @@ from hooks_log_to_csv import (
     MODEL_CALLS_CSV_FILENAME,
     SKILL_INVOCATIONS_CSV_FILENAME,
     TOOL_CALLS_CSV_FILENAME,
+    default_hooks_log_path,
     default_workspace_root,
 )
 
@@ -30,7 +31,7 @@ def main() -> int:
 
 def clear_hooks_log(workspace_root: Path) -> int:
     targets = [
-        workspace_root / ".codex" / "hooks.log",
+        default_hooks_log_path(workspace_root),
         *(workspace_root / filename for filename in DERIVED_CSV_FILENAMES),
     ]
     removed_count = 0

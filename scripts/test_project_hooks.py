@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -15,6 +16,12 @@ CSV_EXPORT_PATH = REPO_ROOT / "scripts" / "hooks_log_to_csv.py"
 
 
 class ProjectHooksTest(unittest.TestCase):
+    @staticmethod
+    def command_for_current_platform(command_hook: dict) -> str:
+        if os.name == "nt":
+            return command_hook["commandWindows"]
+        return command_hook["command"]
+
     def test_every_hook_has_a_valid_windows_override(self) -> None:
         config = json.loads(HOOKS_CONFIG_PATH.read_text(encoding="utf-8"))
 
@@ -50,7 +57,7 @@ class ProjectHooksTest(unittest.TestCase):
             )
 
             result = subprocess.run(
-                command_hook["command"],
+                self.command_for_current_platform(command_hook),
                 cwd=nested_dir,
                 input='{"session_id": "session-1"}',
                 text=True,
@@ -59,7 +66,7 @@ class ProjectHooksTest(unittest.TestCase):
             )
 
             self.assertEqual(0, result.returncode, result.stderr)
-            self.assertTrue((workspace_root / ".codex" / "hooks.log").is_file())
+            self.assertTrue((workspace_root / "hooks.log").is_file())
 
     def test_csv_export_runs_from_a_workspace_subdirectory(self) -> None:
         config = json.loads(HOOKS_CONFIG_PATH.read_text(encoding="utf-8"))
@@ -72,13 +79,11 @@ class ProjectHooksTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir) / "workspace"
             scripts_dir = workspace_root / "scripts"
-            codex_dir = workspace_root / ".codex"
             nested_dir = workspace_root / "src" / "nested"
             scripts_dir.mkdir(parents=True)
-            codex_dir.mkdir()
             nested_dir.mkdir(parents=True)
             shutil.copy2(CSV_EXPORT_PATH, scripts_dir / "hooks_log_to_csv.py")
-            (codex_dir / "hooks.log").write_text(
+            (workspace_root / "hooks.log").write_text(
                 '{"hook_type": "Stop", "payload": {}}\n',
                 encoding="utf-8",
             )
@@ -89,7 +94,7 @@ class ProjectHooksTest(unittest.TestCase):
             )
 
             result = subprocess.run(
-                command_hook["command"],
+                self.command_for_current_platform(command_hook),
                 cwd=nested_dir,
                 text=True,
                 shell=True,

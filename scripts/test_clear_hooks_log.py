@@ -16,10 +16,8 @@ class ClearHooksLogTest(unittest.TestCase):
     def test_main_removes_log_and_derived_csv_files(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir)
-            codex_dir = workspace_root / ".codex"
-            codex_dir.mkdir()
             targets = [
-                codex_dir / "hooks.log",
+                workspace_root / "hooks.log",
                 workspace_root / "hooks_events.csv",
                 workspace_root / "hooks_tool_calls.csv",
                 workspace_root / "hooks_skill_invocations.csv",

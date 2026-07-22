@@ -30,18 +30,16 @@ class HooksLogToCsvTest(unittest.TestCase):
                     workspace_root, Path("/tmp/elsewhere/hooks.log")
                 )
 
-    def test_main_uses_workspace_codex_hooks_log_by_default(self) -> None:
+    def test_main_uses_workspace_root_hooks_log_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             workspace_root = temp_path / "workspace"
             workspace_root.mkdir()
-            codex_dir = workspace_root / ".codex"
-            log_path = codex_dir / "hooks.log"
+            log_path = workspace_root / "hooks.log"
             events_path = workspace_root / "hooks_events.csv"
             tool_calls_path = workspace_root / "hooks_tool_calls.csv"
             skill_invocations_path = workspace_root / "hooks_skill_invocations.csv"
             model_calls_path = workspace_root / "hooks_model_calls.csv"
-            codex_dir.mkdir()
             log_path.write_text(
                 json.dumps(
                     {
@@ -90,9 +88,7 @@ class HooksLogToCsvTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir) / "workspace"
             workspace_root.mkdir()
-            codex_dir = workspace_root / ".codex"
-            codex_dir.mkdir()
-            (codex_dir / "hooks.log").write_text(
+            (workspace_root / "hooks.log").write_text(
                 json.dumps(
                     {
                         "timestamp": "2026-07-22T15:05:58.563649+00:00",
@@ -150,8 +146,6 @@ class HooksLogToCsvTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir) / "workspace"
             workspace_root.mkdir()
-            codex_dir = workspace_root / ".codex"
-            codex_dir.mkdir()
             record = {
                 "timestamp": "2026-07-22T15:05:59+00:00",
                 "hook_type": "PostToolUse",
@@ -180,7 +174,7 @@ class HooksLogToCsvTest(unittest.TestCase):
             first_record = json.loads(json.dumps(record))
             first_record["payload"].pop("model")
             first_record["token_usage"].pop("reasoning_effort")
-            (codex_dir / "hooks.log").write_text(
+            (workspace_root / "hooks.log").write_text(
                 "\n".join([json.dumps(first_record), json.dumps(record)]) + "\n",
                 encoding="utf-8",
             )

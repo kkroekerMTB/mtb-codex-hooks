@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sys
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -44,16 +46,43 @@ class PublishTest(unittest.TestCase):
         self.assertNotIn("$HOME", command)
         self.assert_generated_python_is_valid(command)
 
-    def test_user_level_csv_export_command_uses_python_home_resolution(self) -> None:
+    def test_user_level_csv_export_command_uses_workspace_default_log(self) -> None:
         command = publish.user_level_csv_export_command("Stop")
 
         self.assertTrue(command.startswith(f'"{sys.executable}" -c '))
         self.assertIn("Path.home()/'.codex'/'hooks'/'hooks_log_to_csv.py", command)
-        self.assertIn("Path.home()/'.codex'/'hooks.log'", command)
+        self.assertNotIn("hooks.log", command)
         self.assertNotIn("$HOME", command)
         self.assertNotIn("git rev-parse", command)
         self.assertNotIn("&&", command)
         self.assert_generated_python_is_valid(command)
+
+    def test_published_logger_writes_to_the_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_root = Path(temporary_directory)
+            published = publish.publish(temporary_root / ".codex")
+            config = publish.read_json(published / "hooks.json")
+            command = config["hooks"]["SessionStart"][0]["hooks"][0]["command"]
+            workspace_root = temporary_root / "workspace"
+            nested_dir = workspace_root / "src" / "nested"
+            nested_dir.mkdir(parents=True)
+            subprocess.run(["git", "init", "--quiet"], cwd=workspace_root, check=True)
+            environment = os.environ.copy()
+            environment["HOME"] = str(temporary_root)
+            environment["USERPROFILE"] = str(temporary_root)
+
+            result = subprocess.run(
+                command,
+                cwd=nested_dir,
+                input='{"session_id": "session-1"}',
+                text=True,
+                shell=True,
+                capture_output=True,
+                env=environment,
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertTrue((workspace_root / "hooks.log").is_file())
 
     def test_user_level_command_accepts_windows_style_project_paths(self) -> None:
         command = publish.user_level_command(
